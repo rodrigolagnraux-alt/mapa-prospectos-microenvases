@@ -247,14 +247,32 @@ POINTS.forEach(p => {
   if (contact.instagram) {
     actionButtons += `<button class="popup-btn" onclick="window.open('https://instagram.com/${contact.instagram.replace('@', '')}', '_blank')">📸 Instagram</button>`;
   }
+  
+  const contactsHtml = `
+    <div style="font-size:10px;margin:8px 0;border:1px solid #ddd;padding:8px;border-radius:4px;">
+      <div style="margin-bottom:6px;"><strong>Contactos:</strong></div>
+      <div style="margin-bottom:4px;">
+        <input type="text" id="contact-phone-${p.id}" placeholder="WhatsApp" value="${contact.phone || ''}" style="width:100%;padding:4px;font-size:9px;border:1px solid #ccc;border-radius:3px;">
+      </div>
+      <div style="margin-bottom:4px;">
+        <input type="text" id="contact-email-${p.id}" placeholder="Email/Web" value="${contact.email || ''}" style="width:100%;padding:4px;font-size:9px;border:1px solid #ccc;border-radius:3px;">
+      </div>
+      <div style="margin-bottom:6px;">
+        <input type="text" id="contact-ig-${p.id}" placeholder="Instagram (@usuario)" value="${contact.instagram || ''}" style="width:100%;padding:4px;font-size:9px;border:1px solid #ccc;border-radius:3px;">
+      </div>
+      <button onclick="saveContactsForProspect('${p.id}', '${p.name}')" style="width:100%;padding:4px;background:#2E5FD4;color:white;border:none;border-radius:3px;font-size:9px;font-weight:700;cursor:pointer;">Guardar contactos</button>
+    </div>
+  `;
+  
   const popupHtml = `
     <div class="popup-tier" style="background:${color}">${TIERS[p.tier].label}</div>
     <div class="popup-title">${p.name}</div>
     <div class="popup-meta">${p.rubro} · ${p.lugar}</div>
     <div class="popup-km">🗺 ${p.km} km ${p.km_source === 'estimado' ? '(est.)' : ''}</div>
     <div class="popup-nota">${p.nota}</div>
+    ${contactsHtml}
     <div class="popup-actions">
-      ${actionButtons || '<div style="font-size:10px;color:#999;">Sin contacto registrado</div>'}
+      ${actionButtons || '<div style="font-size:10px;color:#999;">Agregá contactos para ver opciones</div>'}
     </div>
     <div class="popup-status">
       <label>Estado:</label><br>
@@ -457,6 +475,37 @@ document.getElementById('overlay').addEventListener('click', () => {
   document.getElementById('sidebar').classList.remove('active');
   document.getElementById('overlay').classList.remove('active');
 });
+
+function saveContactsForProspect(id, name) {
+  const phone = document.getElementById(`contact-phone-${id}`).value.trim();
+  const email = document.getElementById(`contact-email-${id}`).value.trim();
+  const instagram = document.getElementById(`contact-ig-${id}`).value.trim();
+  
+  // Actualizar en memoria
+  CONTACTS[id] = { name, phone, email, instagram };
+  
+  // Enviar a Sheets
+  if (phone) {
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'updateContact', prospectName: name, field: 'phone', value: phone })
+    }).catch(err => console.log('Error:', err));
+  }
+  if (email) {
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'updateContact', prospectName: name, field: 'email', value: email })
+    }).catch(err => console.log('Error:', err));
+  }
+  if (instagram) {
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'updateContact', prospectName: name, field: 'instagram', value: instagram })
+    }).catch(err => console.log('Error:', err));
+  }
+  
+  alert('✓ Contactos guardados en Sheets');
+}
 </script>
 
 </body>
