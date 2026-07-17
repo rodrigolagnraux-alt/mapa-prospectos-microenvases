@@ -200,6 +200,7 @@ const POINTS = [
   {"name": "Frigorífico Hughes", "rubro": "Frigorífico porcino", "lugar": "Hughes, SF", "lat": -33.809337, "lng": -61.335651, "tier": 4, "nota": "Volumen industrial.", "id": "p13", "km": 310, "km_source": "estimado"}
 ];
 
+const CONTACTS = {"p0": {"name": "La Felisa", "phone": "+542477423593", "email": "lafelisa.com.ar", "instagram": "@lafelisasa"}, "p1": {"name": "Fábrica de Chacinados Poggi", "phone": "+543364212216", "email": null, "instagram": "@fabricapoggi"}, "p2": {"name": "Chacinados Boarini", "phone": "+543364896020", "email": null, "instagram": "@boarinifiambresyembutidos"}, "p3": {"name": "Galletitas Lara", "phone": "+543414331873", "email": "galletitaslara.com.ar", "instagram": "@lara_vainillasygalletitas"}, "p4": {"name": "Frigorífico La Jamonera", "phone": "+543414636714", "email": "la-jamonera.com.ar", "instagram": null}, "p5": {"name": "Fábrica de Galletitas Caricias", "phone": "+543414383461", "email": "productoscaricias.com", "instagram": null}, "p6": {"name": "Cabaña Argentina", "phone": null, "email": "cabargentina.com", "instagram": "@cabargentina"}, "p7": {"name": "Alimentaria La Pompeya", "phone": null, "email": null, "instagram": null}, "p8": {"name": "Ceryvac S.A.", "phone": null, "email": null, "instagram": null}, "p9": {"name": "Swift Venado Tuerto", "phone": "+543417027200", "email": null, "instagram": null}, "p10": {"name": "Rafaela Alimentos (Lario)", "phone": null, "email": null, "instagram": "@lariooficial"}, "p11": {"name": "Rafaela Alimentos — Casilda", "phone": null, "email": null, "instagram": null}, "p12": {"name": "Cagnoli", "phone": "+542494441144", "email": null, "instagram": null}, "p13": {"name": "Frigorífico Hughes", "phone": null, "email": null, "instagram": null}};
 const HOME = { name: "Microenvases", lat: -34.6878491, lng: -58.3244052 };
 let statusState = {};
 let currentProspect = null;
@@ -234,6 +235,17 @@ POINTS.forEach(p => {
   });
   
   const marker = L.marker([p.lat, p.lng], { icon }).addTo(map);
+  const contact = CONTACTS[p.id] || {};
+  let actionButtons = '';
+  if (contact.phone) {
+    actionButtons += `<button class="popup-btn" onclick="openWhatsAppForm('${p.id}', '${p.name}')">💬 WhatsApp</button>`;
+  }
+  if (contact.email) {
+    actionButtons += `<button class="popup-btn" onclick="openEmailForm('${p.id}', '${p.name}')">📧 Email</button>`;
+  }
+  if (contact.instagram) {
+    actionButtons += `<button class="popup-btn" onclick="window.open('https://instagram.com/${contact.instagram.replace('@', '')}', '_blank')">📸 Instagram</button>`;
+  }
   const popupHtml = `
     <div class="popup-tier" style="background:${color}">${TIERS[p.tier].label}</div>
     <div class="popup-title">${p.name}</div>
@@ -241,8 +253,7 @@ POINTS.forEach(p => {
     <div class="popup-km">🗺 ${p.km} km ${p.km_source === 'estimado' ? '(est.)' : ''}</div>
     <div class="popup-nota">${p.nota}</div>
     <div class="popup-actions">
-      <button class="popup-btn" onclick="openEmailForm('${p.id}', '${p.name}')">📧 Email</button>
-      <button class="popup-btn" onclick="openWhatsAppForm('${p.id}', '${p.name}')">💬 WhatsApp</button>
+      ${actionButtons || '<div style="font-size:10px;color:#999;">Sin contacto registrado</div>'}
     </div>
     <div class="popup-status">
       <label>Estado:</label><br>
@@ -350,6 +361,12 @@ Microenvases`);
 }
 
 function openWhatsAppForm(id, name) {
+  const contact = CONTACTS[id];
+  if (!contact || !contact.phone) {
+    alert('No hay WhatsApp registrado para ' + name);
+    return;
+  }
+  const cleanPhone = contact.phone.replace(/[^0-9]/g, '');
   const text = encodeURIComponent(`Hola ${name} 👋
 
 Te escribo de Microenvases — proveedor de cajas de cartón corrugado hace 20 años.
@@ -363,7 +380,10 @@ Queremos ofrecerte:
 
 Rodrigo
 📞 2473410437`);
-  window.open(`https://wa.me/542473410437?text=${text}`, '_blank');
+  console.log('Phone for ' + id + ': ' + cleanPhone);
+  const waUrl = `https://wa.me/${cleanPhone}?text=${text}`;
+  console.log('WhatsApp URL: ' + waUrl);
+  window.open(waUrl, '_blank');
 }
 
 function openCloseModal(id) {
