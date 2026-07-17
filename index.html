@@ -201,6 +201,7 @@ const POINTS = [
 ];
 
 const CONTACTS = {"p0": {"name": "La Felisa", "phone": "+542477423593", "email": "lafelisa.com.ar", "instagram": "@lafelisasa"}, "p1": {"name": "Fábrica de Chacinados Poggi", "phone": "+543364212216", "email": null, "instagram": "@fabricapoggi"}, "p2": {"name": "Chacinados Boarini", "phone": "+543364896020", "email": null, "instagram": "@boarinifiambresyembutidos"}, "p3": {"name": "Galletitas Lara", "phone": "+543414331873", "email": "galletitaslara.com.ar", "instagram": "@lara_vainillasygalletitas"}, "p4": {"name": "Frigorífico La Jamonera", "phone": "+543414636714", "email": "la-jamonera.com.ar", "instagram": null}, "p5": {"name": "Fábrica de Galletitas Caricias", "phone": "+543414383461", "email": "productoscaricias.com", "instagram": null}, "p6": {"name": "Cabaña Argentina", "phone": null, "email": "cabargentina.com", "instagram": "@cabargentina"}, "p7": {"name": "Alimentaria La Pompeya", "phone": null, "email": null, "instagram": null}, "p8": {"name": "Ceryvac S.A.", "phone": null, "email": null, "instagram": null}, "p9": {"name": "Swift Venado Tuerto", "phone": "+543417027200", "email": null, "instagram": null}, "p10": {"name": "Rafaela Alimentos (Lario)", "phone": null, "email": null, "instagram": "@lariooficial"}, "p11": {"name": "Rafaela Alimentos — Casilda", "phone": null, "email": null, "instagram": null}, "p12": {"name": "Cagnoli", "phone": "+542494441144", "email": null, "instagram": null}, "p13": {"name": "Frigorífico Hughes", "phone": null, "email": null, "instagram": null}};
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw20hhvu-rcHqBEIFNmSLO1ykXvBI1IsC1UC430jZ0U-UWR8phmwMTxS1zZCgkO704HEQ/usercontent";
 const HOME = { name: "Microenvases", lat: -34.6878491, lng: -58.3244052 };
 let statusState = {};
 let currentProspect = null;
@@ -334,6 +335,20 @@ renderList();
 
 function updateStatus(id, status) {
   statusState[id] = status;
+  
+  // Enviar a Sheets
+  const prospect = POINTS.find(p => p.id === id);
+  if (prospect && status !== 'cerrado') {
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'updateStatus',
+        prospectName: prospect.name,
+        status: status
+      })
+    }).catch(err => console.log('Sync error:', err));
+  }
+  
   if (status === 'cerrado') {
     openCloseModal(id);
   }
@@ -404,7 +419,25 @@ document.getElementById('modal-save').addEventListener('click', () => {
   }
   
   const comision = (parseFloat(monto) * 0.03).toFixed(2);
-  alert(`✓ Venta registrada\n\nProspecto: ${currentProspect.name}\nO.C: ${oc}\nMonto: $${monto}\nComisión (3%): $${comision}`);
+  
+  // Enviar a Sheets
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'registerSale',
+      prospectName: currentProspect.name,
+      oc: oc,
+      monto: monto
+    })
+  }).then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        alert(`✓ Venta registrada en Sheets\n\nProspecto: ${currentProspect.name}\nO.C: ${oc}\nMonto: $${monto}\nComisión (3%): $${comision}`);
+        statusState[currentProspect.id] = 'cerrado';
+        renderList();
+      }
+    })
+    .catch(err => console.log('Error:', err));
   
   document.getElementById('modal').classList.remove('active');
 });
