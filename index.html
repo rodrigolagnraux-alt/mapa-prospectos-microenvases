@@ -69,13 +69,41 @@
   .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity 0.3s ease; z-index: 98; }
   .overlay.active { opacity: 1; pointer-events: auto; }
   
+  .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+  .modal.active { display: flex; }
+  .modal-content { background: white; padding: 24px; border-radius: 12px; max-width: 400px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+  .modal-content h3 { margin-bottom: 16px; font-size: 16px; font-weight: 700; }
+  .modal-field { margin-bottom: 16px; }
+  .modal-field label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--ink); }
+  .modal-field input { width: 100%; padding: 8px 12px; border: 1px solid #ddd4c2; border-radius: 6px; font-size: 14px; font-family: inherit; }
+  .modal-field input:focus { outline: none; border-color: var(--red); }
+  .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
+  .modal-actions button { flex: 1; padding: 10px; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+  .btn-save { background: var(--dark); color: white; }
+  .btn-save:hover { background: #0a0a0c; }
+  .btn-cancel { background: #f0f0f0; color: var(--ink); }
+  .btn-cancel:hover { background: #e0e0e0; }
+  
+  .leaflet-popup-content { font-family: inherit; }
+  .popup-title { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+  .popup-tier { display: inline-block; font-size: 9px; font-weight: 700; color: white; padding: 2px 7px; border-radius: 10px; margin-bottom: 6px; }
+  .popup-meta { font-size: 10px; color: #555; margin-bottom: 3px; }
+  .popup-km { font-size: 10px; font-weight: 700; color: var(--red); margin-bottom: 4px; }
+  .popup-nota { font-size: 10px; color: #333; line-height: 1.4; margin-bottom: 8px; }
+  .popup-actions { display: flex; gap: 6px; margin-bottom: 8px; }
+  .popup-btn { flex: 1; font-size: 10px; font-weight: 700; color: white; background: #2E5FD4; padding: 5px 8px; border-radius: 6px; text-decoration: none; border: none; cursor: pointer; transition: background 0.2s ease; }
+  .popup-btn:hover { background: #1e47a8; }
+  .popup-status { margin-top: 8px; }
+  .popup-status label { font-size: 10px; color: #666; }
+  .popup-status select { font-size: 10px; padding: 3px 6px; border-radius: 4px; border: 1px solid #ccc; width: 100%; margin-top: 4px; }
+  
   @media (min-width: 768px) {
     header { padding: 16px 24px; }
     header .menu-btn { display: none; }
     header h1 { font-size: 16px; }
     header p { font-size: 12px; }
     
-    #sidebar { position: relative; transform: none; top: auto; width: 300px; height: 100%; border-right: 1px solid #e6e1d8; }
+    #sidebar { position: relative; transform: none; top: auto; width: 300px; height: 100%; }
     .overlay { display: none; }
     
     .container { height: calc(100vh - 76px); }
@@ -85,17 +113,6 @@
     .sort-btn { font-size: 11px; }
     #prospect-list { max-height: none; }
   }
-  
-  .leaflet-popup-content { font-family: inherit; }
-  .popup-title { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
-  .popup-tier { display: inline-block; font-size: 9px; font-weight: 700; color: white; padding: 2px 7px; border-radius: 10px; margin-bottom: 6px; }
-  .popup-meta { font-size: 10px; color: #555; margin-bottom: 3px; }
-  .popup-km { font-size: 10px; font-weight: 700; color: var(--red); margin-bottom: 4px; }
-  .popup-nota { font-size: 10px; color: #333; line-height: 1.4; margin-bottom: 8px; }
-  .popup-directions { display: inline-block; font-size: 10px; font-weight: 700; color: white; background: #2E5FD4; padding: 5px 10px; border-radius: 6px; text-decoration: none; }
-  .popup-status { margin-top: 8px; }
-  .popup-status label { font-size: 10px; color: #666; }
-  .popup-status select { font-size: 10px; padding: 3px 6px; border-radius: 4px; border: 1px solid #ccc; }
 </style>
 </head>
 <body>
@@ -120,11 +137,7 @@
       <div class="divider"></div>
       
       <div class="home-note note">
-        🚩 Punto rojo con borde negro: planta de Microenvases (Villa Domínico, Avellaneda). Todo el resto son prospectos, con los km reales por ruta (no en línea recta) hasta cada uno — para cotizar flete.
-      </div>
-      
-      <div class="warn-note note">
-        ⚠️ Esta app funciona offline después de la primera carga — todos los datos se cachean automáticamente.
+        🚩 Punto rojo: planta de Microenvases. Resto: prospectos con km reales por ruta.
       </div>
       
       <h2 style="margin-top: 16px;">Lista de prospectos</h2>
@@ -133,19 +146,33 @@
         <button class="sort-btn" data-sort="km">Por km</button>
       </div>
       <div id="prospect-list"></div>
-      
-      <div class="tip-text">El estado que marques acá es solo para esta sesión — anotalo en el Excel para que quede guardado.</div>
     </div>
   </div>
 
   <div id="map"></div>
 </div>
 
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <h3>Cerrar venta — <span id="modal-prospect-name"></span></h3>
+    <div class="modal-field">
+      <label>N° de O.C:</label>
+      <input type="text" id="modal-oc" placeholder="Ej: OC-2026-001">
+    </div>
+    <div class="modal-field">
+      <label>Monto ($):</label>
+      <input type="number" id="modal-monto" placeholder="Ej: 150000">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-save" id="modal-save">Guardar y enviar</button>
+      <button class="btn-cancel" id="modal-cancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./service-worker.js').catch(err => {
-    console.log('SW registration failed: ', err);
-  });
+  navigator.serviceWorker.register('./service-worker.js').catch(err => console.log('SW registration failed'));
 }
 
 const TIERS = {
@@ -162,51 +189,45 @@ const POINTS = [
   {"name": "Chacinados Boarini", "rubro": "Chacinados", "lugar": "San Nicolás, BA", "lat": -33.343119, "lng": -60.207599, "tier": 1, "nota": "Marca fuerte en la zona.", "id": "p2", "km": 267, "km_source": "real"},
   {"name": "Galletitas Lara", "rubro": "Galletitas", "lugar": "Rosario, SF", "lat": -32.953982, "lng": -60.675532, "tier": 1, "nota": "Distribución nacional.", "id": "p3", "km": 340, "km_source": "real"},
   {"name": "Frigorífico La Jamonera", "rubro": "Fiambres", "lugar": "Rosario, SF", "lat": -32.991087, "lng": -60.643829, "tier": 2, "nota": "37K seguidores IG.", "id": "p4", "km": 340, "km_source": "real"},
-  {"name": "Fábrica de Galletitas Caricias", "rubro": "Galletitas", "lugar": "Rosario, SF", "lat": -32.927245, "lng": -60.703678, "tier": 2, "nota": "870 reseñas. Confirmar dirección.", "id": "p5", "km": 340, "km_source": "real"},
-  {"name": "Cabaña Argentina (Carnes Porcinas Seleccionadas)", "rubro": "Fiambres", "lugar": "General Las Heras, BA", "lat": -34.927297, "lng": -58.832632, "tier": 3, "nota": "#4 ranking nacional. Invirtiendo US$40M.", "id": "p6", "km": 65, "km_source": "estimado"},
-  {"name": "Alimentaria La Pompeya", "rubro": "Faena porcina", "lugar": "Marcos Paz, BA", "lat": -34.831089, "lng": -58.836445, "tier": 4, "nota": "#2 ranking nacional. 100% B2B.", "id": "p7", "km": 60, "km_source": "estimado"},
-  {"name": "Ceryvac S.A.", "rubro": "Faena porcina", "lugar": "Virrey del Pino, BA", "lat": -34.857332, "lng": -58.650698, "tier": 4, "nota": "#3 ranking nacional. 100% industrial.", "id": "p8", "km": 45, "km_source": "estimado"},
+  {"name": "Fábrica de Galletitas Caricias", "rubro": "Galletitas", "lugar": "Rosario, SF", "lat": -32.927245, "lng": -60.703678, "tier": 2, "nota": "870 reseñas.", "id": "p5", "km": 340, "km_source": "real"},
+  {"name": "Cabaña Argentina", "rubro": "Fiambres", "lugar": "General Las Heras, BA", "lat": -34.927297, "lng": -58.832632, "tier": 3, "nota": "#4 ranking nacional.", "id": "p6", "km": 65, "km_source": "estimado"},
+  {"name": "Alimentaria La Pompeya", "rubro": "Faena porcina", "lugar": "Marcos Paz, BA", "lat": -34.831089, "lng": -58.836445, "tier": 4, "nota": "#2 ranking nacional.", "id": "p7", "km": 60, "km_source": "estimado"},
+  {"name": "Ceryvac S.A.", "rubro": "Faena porcina", "lugar": "Virrey del Pino, BA", "lat": -34.857332, "lng": -58.650698, "tier": 4, "nota": "#3 ranking nacional.", "id": "p8", "km": 45, "km_source": "estimado"},
   {"name": "Swift Venado Tuerto", "rubro": "Frigorífico", "lugar": "Venado Tuerto, SF", "lat": -33.717048, "lng": -61.986140, "tier": 4, "nota": "Multinacional.", "id": "p9", "km": 379, "km_source": "real"},
-  {"name": "Rafaela Alimentos (Lario)", "rubro": "Fiambres", "lugar": "Rafaela, SF", "lat": -31.242223, "lng": -61.502090, "tier": 5, "nota": "#5 ranking. Expandiéndose a CABA.", "id": "p10", "km": 543, "km_source": "real"},
-  {"name": "Rafaela Alimentos — planta Casilda", "rubro": "Fiambres", "lugar": "Casilda, SF", "lat": -33.046160, "lng": -61.144410, "tier": 5, "nota": "Planta más cercana a Rosario.", "id": "p11", "km": 350, "km_source": "real"},
-  {"name": "Cagnoli", "rubro": "Fiambres", "lugar": "Tandil, BA", "lat": -37.286960, "lng": -59.131252, "tier": 5, "nota": "15.000 ton/año. Eduardo confirmó entregas.", "id": "p12", "km": 348, "km_source": "real"},
-  {"name": "Frigorífico Hughes", "rubro": "Frigorífico porcino", "lugar": "Hughes, SF", "lat": -33.809337, "lng": -61.335651, "tier": 4, "nota": "Planta sobre RN8. Volumen industrial. Black Bamboo Enterprises.", "id": "p13", "km": 310, "km_source": "estimado"}
+  {"name": "Rafaela Alimentos (Lario)", "rubro": "Fiambres", "lugar": "Rafaela, SF", "lat": -31.242223, "lng": -61.502090, "tier": 5, "nota": "#5 ranking nacional.", "id": "p10", "km": 543, "km_source": "real"},
+  {"name": "Rafaela Alimentos — Casilda", "rubro": "Fiambres", "lugar": "Casilda, SF", "lat": -33.046160, "lng": -61.144410, "tier": 5, "nota": "Planta más cercana.", "id": "p11", "km": 350, "km_source": "real"},
+  {"name": "Cagnoli", "rubro": "Fiambres", "lugar": "Tandil, BA", "lat": -37.286960, "lng": -59.131252, "tier": 5, "nota": "15.000 ton/año.", "id": "p12", "km": 348, "km_source": "real"},
+  {"name": "Frigorífico Hughes", "rubro": "Frigorífico porcino", "lugar": "Hughes, SF", "lat": -33.809337, "lng": -61.335651, "tier": 4, "nota": "Volumen industrial.", "id": "p13", "km": 310, "km_source": "estimado"}
 ];
 
-const HOME = { name: "Microenvases (planta)", lat: -34.6878491, lng: -58.3244052 };
-
+const HOME = { name: "Microenvases", lat: -34.6878491, lng: -58.3244052 };
 let statusState = {};
+let currentProspect = null;
+let currentSort = 'etapa';
+
 POINTS.forEach(p => { statusState[p.id] = "pendiente"; });
 
-let currentSort = 'etapa';
-let activeTier = null;
-
-// Init map
 const map = L.map('map', { scrollWheelZoom: true }).setView([-33.4, -60.2], 6);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-  attribution: '© OpenStreetMap contributors © CARTO',
+  attribution: '© OpenStreetMap © CARTO',
   maxZoom: 19
 }).addTo(map);
 
-// Home marker
 const homeIcon = L.divIcon({
-  className: '',
   html: '<div style="width:20px;height:20px;border-radius:50%;background:#D42E2E;border:3px solid #161A;box-shadow:0 0 0 3px white;"></div>',
   iconSize: [20, 20],
   iconAnchor: [10, 10]
 });
 L.marker([HOME.lat, HOME.lng], { icon: homeIcon }).addTo(map).bindPopup(
-  `<div class="popup-title">🚩 ${HOME.name}</div><div class="popup-meta">Base de operaciones</div>`
+  `<div class="popup-title">🚩 ${HOME.name}</div><div class="popup-meta">Planta de operaciones</div>`
 );
 
-// Point markers
 const markersByTier = {};
 const markersById = {};
 
 POINTS.forEach(p => {
   const color = TIERS[p.tier].color;
   const icon = L.divIcon({
-    className: '',
     html: `<div style="width:16px;height:16px;border-radius:50%;background:${color};border:2px solid rgba(0,0,0,0.35);box-shadow:0 1px 3px rgba(0,0,0,0.4);"></div>`,
     iconSize: [16, 16],
     iconAnchor: [8, 8]
@@ -217,13 +238,16 @@ POINTS.forEach(p => {
     <div class="popup-tier" style="background:${color}">${TIERS[p.tier].label}</div>
     <div class="popup-title">${p.name}</div>
     <div class="popup-meta">${p.rubro} · ${p.lugar}</div>
-    <div class="popup-km">🗺 ${p.km} km por ruta ${p.km_source === 'estimado' ? '(estimado)' : ''}</div>
+    <div class="popup-km">🗺 ${p.km} km ${p.km_source === 'estimado' ? '(est.)' : ''}</div>
     <div class="popup-nota">${p.nota}</div>
-    <a class="popup-directions" href="https://www.google.com/maps/dir/?api=1&origin=${HOME.lat},${HOME.lng}&destination=${p.lat},${p.lng}&travelmode=driving" target="_blank">Cómo llegar</a>
+    <div class="popup-actions">
+      <button class="popup-btn" onclick="openEmailForm('${p.id}', '${p.name}')">📧 Email</button>
+      <button class="popup-btn" onclick="openWhatsAppForm('${p.id}', '${p.name}')">💬 WhatsApp</button>
+    </div>
     <div class="popup-status">
       <label>Estado:</label><br>
-      <select data-pid="${p.id}" style="width:100%; margin-top:4px;">
-        <option value="pendiente" selected>Pendiente</option>
+      <select data-pid="${p.id}" onchange="updateStatus('${p.id}', this.value)">
+        <option value="pendiente">Pendiente</option>
         <option value="contactado">Contactado</option>
         <option value="cotizado">Cotizado</option>
         <option value="cerrado">Cerrado</option>
@@ -231,23 +255,12 @@ POINTS.forEach(p => {
     </div>
   `;
   marker.bindPopup(popupHtml);
-  marker.on('popupopen', () => {
-    const sel = document.querySelector(`select[data-pid="${p.id}"]`);
-    if (sel) {
-      sel.value = statusState[p.id];
-      sel.addEventListener('change', (e) => {
-        statusState[p.id] = e.target.value;
-        renderList();
-      });
-    }
-  });
   
   if (!markersByTier[p.tier]) markersByTier[p.tier] = [];
   markersByTier[p.tier].push(marker);
   markersById[p.id] = marker;
 });
 
-// Tier list
 const tierList = document.getElementById('tier-list');
 Object.keys(TIERS).forEach(tierNum => {
   const t = TIERS[tierNum];
@@ -263,21 +276,13 @@ Object.keys(TIERS).forEach(tierNum => {
   `;
   item.addEventListener('click', () => {
     document.querySelectorAll('.tier-item').forEach(e => e.classList.remove('active'));
-    if (activeTier === tierNum) {
-      activeTier = null;
-      map.setView([-33.4, -60.2], 6);
-    } else {
-      activeTier = tierNum;
-      item.classList.add('active');
-      const group = L.featureGroup(markersByTier[tierNum]);
-      map.fitBounds(group.getBounds().pad(0.35));
-      markersByTier[tierNum][0].openPopup();
-    }
+    item.classList.add('active');
+    const group = L.featureGroup(markersByTier[tierNum]);
+    map.fitBounds(group.getBounds().pad(0.35));
   });
   tierList.appendChild(item);
 });
 
-// Sort buttons
 document.querySelectorAll('.sort-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
@@ -287,7 +292,6 @@ document.querySelectorAll('.sort-btn').forEach(btn => {
   });
 });
 
-// Render list
 function renderList() {
   let sorted = [...POINTS];
   if (currentSort === 'etapa') {
@@ -317,7 +321,80 @@ function renderList() {
 }
 renderList();
 
-// Mobile menu
+function updateStatus(id, status) {
+  statusState[id] = status;
+  if (status === 'cerrado') {
+    openCloseModal(id);
+  }
+  renderList();
+}
+
+function openEmailForm(id, name) {
+  const prospect = POINTS.find(p => p.id === id);
+  const subject = encodeURIComponent('Cajas de cartón corrugado — Propuesta Microenvases');
+  const body = encodeURIComponent(`Hola ${name},
+
+Te contacto de parte de Microenvases, proveedor de cajas de cartón corrugado con 20 años en el mercado.
+
+Trabajamos con las principales marcas y queremos sumarte a nuestros clientes.
+
+La diferencia: trato directo con la gerencia, atención personalizada, cotización sin compromiso. Buscamos trabajar de manera seria y flexible según tu necesidad.
+
+¿Te vendría bien una charla para conocer cómo trabajamos?
+
+📞 2473410437 (Rodrigo)
+
+Saludos,
+Microenvases`);
+  window.location.href = `mailto:?subject=${subject}&body=${body}`;
+}
+
+function openWhatsAppForm(id, name) {
+  const text = encodeURIComponent(`Hola ${name} 👋
+
+Te escribo de Microenvases — proveedor de cajas de cartón corrugado hace 20 años.
+
+Queremos ofrecerte:
+✓ Trato directo con gerencia
+✓ Cotización sin compromiso
+✓ Precios competitivos
+
+¿Te vendría bien una charla rápida para ver cómo podemos ayudarte?
+
+Rodrigo
+📞 2473410437`);
+  window.open(`https://wa.me/?text=${text}`, '_blank');
+}
+
+function openCloseModal(id) {
+  currentProspect = POINTS.find(p => p.id === id);
+  document.getElementById('modal-prospect-name').textContent = currentProspect.name;
+  document.getElementById('modal-oc').value = '';
+  document.getElementById('modal-monto').value = '';
+  document.getElementById('modal').classList.add('active');
+}
+
+document.getElementById('modal-save').addEventListener('click', () => {
+  const oc = document.getElementById('modal-oc').value.trim();
+  const monto = document.getElementById('modal-monto').value.trim();
+  
+  if (!oc || !monto) {
+    alert('Completa O.C y Monto');
+    return;
+  }
+  
+  const comision = (parseFloat(monto) * 0.03).toFixed(2);
+  alert(`✓ Venta registrada\n\nProspecto: ${currentProspect.name}\nO.C: ${oc}\nMonto: $${monto}\nComisión (3%): $${comision}`);
+  
+  document.getElementById('modal').classList.remove('active');
+});
+
+document.getElementById('modal-cancel').addEventListener('click', () => {
+  document.getElementById('modal').classList.remove('active');
+  statusState[currentProspect.id] = 'cotizado';
+  renderList();
+});
+
 document.getElementById('menu-toggle').addEventListener('click', () => {
   document.getElementById('sidebar').classList.toggle('active');
   document.getElementById('overlay').classList.toggle('active');
@@ -326,14 +403,6 @@ document.getElementById('menu-toggle').addEventListener('click', () => {
 document.getElementById('overlay').addEventListener('click', () => {
   document.getElementById('sidebar').classList.remove('active');
   document.getElementById('overlay').classList.remove('active');
-});
-
-// Close sidebar on link click
-document.querySelectorAll('#sidebar a').forEach(link => {
-  link.addEventListener('click', () => {
-    document.getElementById('sidebar').classList.remove('active');
-    document.getElementById('overlay').classList.remove('active');
-  });
 });
 </script>
 
