@@ -380,7 +380,10 @@ Queremos ofrecerte:
 
 Rodrigo
 📞 2473410437`);
-  window.open(`https://wa.me/${cleanPhone}?text=${text}`, '_blank');
+  console.log('Phone for ' + id + ': ' + cleanPhone);
+  const waUrl = `https://wa.me/${cleanPhone}?text=${text}`;
+  console.log('WhatsApp URL: ' + waUrl);
+  window.open(waUrl, '_blank');
 }
 
 function openCloseModal(id) {
