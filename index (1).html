@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#16161A">
+<meta name="description" content="Mapa de prospectos — Cajas de cartón corrugado. Plan de ataque por etapas desde Microenvases.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Prospectos Micro">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%2316161A' width='180' height='180'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='120' font-weight='bold' fill='%23D42E2E' font-family='system-ui'>M</text></svg>">
+<title>Mapa de prospectos — Microenvases</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root { --red: #D42E2E; --dark: #16161A; --paper: #F5F1EC; --ink: #232323; --muted: #6b6b6b; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--paper); color: var(--ink); height: 100vh; overflow: hidden; }
+  
+  header { background: var(--dark); color: white; padding: 12px 16px; display: flex; align-items: center; gap: 12px; z-index: 100; position: relative; }
+  header .menu-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 4px; }
+  header img { height: 32px; }
+  header .title { flex: 1; }
+  header h1 { font-size: 14px; font-weight: 700; line-height: 1.2; }
+  header p { font-size: 11px; color: #ccc; margin-top: 2px; }
+  
+  .container { display: flex; height: calc(100vh - 56px); position: relative; }
+  
+  #sidebar { position: fixed; left: 0; top: 56px; width: 280px; height: calc(100vh - 56px); background: white; overflow-y: auto; z-index: 99; transform: translateX(-100%); transition: transform 0.3s ease; border-right: 1px solid #e6e1d8; }
+  #sidebar.active { transform: translateX(0); }
+  
+  #map { flex: 1; width: 100%; height: 100%; }
+  
+  .sidebar-content { padding: 16px; }
+  .sidebar-content h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 12px; font-weight: 600; }
+  
+  .tier-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 8px; border-radius: 8px; cursor: pointer; transition: background 0.15s ease; margin-bottom: 4px; }
+  .tier-item:hover { background: #f7f4ee; }
+  .tier-item.active { background: #efe9df; }
+  .tier-item .dot { width: 11px; height: 11px; border-radius: 50%; margin-top: 3px; flex-shrink: 0; border: 2px solid rgba(0,0,0,0.15); }
+  .tier-item-text { flex: 1; }
+  .tier-item .label { font-size: 12px; font-weight: 600; line-height: 1.3; }
+  .tier-item .count { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  
+  .divider { height: 1px; background: #e6e1d8; margin: 12px 0; }
+  .note { font-size: 10px; color: var(--muted); line-height: 1.4; padding: 10px 8px; border-radius: 4px; margin-bottom: 8px; }
+  .home-note { background: #FBEAEA; border-left: 3px solid var(--red); }
+  .warn-note { background: #FFF6DD; border-left: 3px solid #D4A017; }
+  
+  .list-toolbar { display: flex; gap: 6px; margin: 10px 0; }
+  .sort-btn { flex: 1; font-size: 10px; padding: 6px 4px; border: 1px solid #ddd4c2; border-radius: 6px; background: white; cursor: pointer; color: var(--muted); transition: all 0.15s ease; }
+  .sort-btn.active { background: var(--dark); color: white; border-color: var(--dark); }
+  
+  #prospect-list { max-height: 350px; overflow-y: auto; }
+  .prospect-row { display: flex; align-items: center; gap: 8px; padding: 7px 6px; border-radius: 7px; cursor: pointer; font-size: 11px; margin-bottom: 4px; }
+  .prospect-row:hover { background: #f7f4ee; }
+  .prospect-row .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .prospect-row .rname { flex: 1; font-weight: 600; }
+  .prospect-row .rkm { color: var(--muted); white-space: nowrap; font-size: 10px; }
+  .status-tag { font-size: 8px; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 4px; }
+  .status-pendiente { background: #eee; color: #888; }
+  .status-contactado { background: #FFF6DD; color: #a67c00; }
+  .status-cotizado { background: #E3EEFB; color: #2E5FD4; }
+  .status-cerrado { background: #E2F0E5; color: #2E8B57; }
+  
+  .tip-text { font-size: 10px; color: var(--muted); margin-top: 8px; line-height: 1.4; padding: 0 8px; }
+  
+  .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity 0.3s ease; z-index: 98; }
+  .overlay.active { opacity: 1; pointer-events: auto; }
+  
+  .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+  .modal.active { display: flex; }
+  .modal-content { background: white; padding: 24px; border-radius: 12px; max-width: 400px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+  .modal-content h3 { margin-bottom: 16px; font-size: 16px; font-weight: 700; }
+  .modal-field { margin-bottom: 16px; }
+  .modal-field label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--ink); }
+  .modal-field input { width: 100%; padding: 8px 12px; border: 1px solid #ddd4c2; border-radius: 6px; font-size: 14px; font-family: inherit; }
+  .modal-field input:focus { outline: none; border-color: var(--red); }
+  .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
+  .modal-actions button { flex: 1; padding: 10px; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+  .btn-save { background: var(--dark); color: white; }
+  .btn-save:hover { background: #0a0a0c; }
+  .btn-cancel { background: #f0f0f0; color: var(--ink); }
+  .btn-cancel:hover { background: #e0e0e0; }
+  
+  .leaflet-popup-content { font-family: inherit; }
+  .popup-title { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+  .popup-tier { display: inline-block; font-size: 9px; font-weight: 700; color: white; padding: 2px 7px; border-radius: 10px; margin-bottom: 6px; }
+  .popup-meta { font-size: 10px; color: #555; margin-bottom: 3px; }
+  .popup-km { font-size: 10px; font-weight: 700; color: var(--red); margin-bottom: 4px; }
+  .popup-nota { font-size: 10px; color: #333; line-height: 1.4; margin-bottom: 8px; }
+  .popup-actions { display: flex; gap: 6px; margin-bottom: 8px; }
+  .popup-btn { flex: 1; font-size: 10px; font-weight: 700; color: white; background: #2E5FD4; padding: 5px 8px; border-radius: 6px; text-decoration: none; border: none; cursor: pointer; transition: background 0.2s ease; }
+  .popup-btn:hover { background: #1e47a8; }
+  .popup-status { margin-top: 8px; }
+  .popup-status label { font-size: 10px; color: #666; }
+  .popup-status select { font-size: 10px; padding: 3px 6px; border-radius: 4px; border: 1px solid #ccc; width: 100%; margin-top: 4px; }
+  
+  @media (min-width: 768px) {
+    header { padding: 16px 24px; }
+    header .menu-btn { display: none; }
+    header h1 { font-size: 16px; }
+    header p { font-size: 12px; }
+    
+    #sidebar { position: relative; transform: none; top: auto; width: 300px; height: 100%; }
+    .overlay { display: none; }
+    
+    .container { height: calc(100vh - 76px); }
+    
+    .sidebar-content h2 { font-size: 12px; }
+    .tier-item { font-size: 13px; padding: 12px 10px; }
+    .sort-btn { font-size: 11px; }
+    #prospect-list { max-height: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <button class="menu-btn" id="menu-toggle">☰</button>
+  <img src="data:image/jpeg;base64,/9j/4QC8RXhpZgAATU0AKgAAAAgABQESAAMAAAABAAEAAAExAAIAAAAQAAABbQEyAAIAAAAUAAABlQEyAAIAAAAUAAABoAEDAAIAAAAaAAAAbgECAA0AAABsAAAAcgECABMAAAB+AAAAiQECAAMAAAB7AAAAAAAAAAD/2P/gABBKRklGAAECQQBKUklGAAECQQBKUklGAAECQQD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAApADwDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWm5ybnJ2eoqOkpaanqKmqsrO0tba2uLm6wsPExcbHyMnK0tPU1dbW2Nna4uPk5ebn6Onq8vP09fb2+Pn6/8QAHwEAAwEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlbaWmJmaoqOkpaanqKmqsrO0tba2uLm6wsPExcbHyMnK0tPU1dbW2Nna4uPk5ebn6Onq8vP09fb2+Pn6/9oADAMBAAIRAxEAPwD9VKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigD//Z" alt="Microenvases" />
+  <div class="title">
+    <h1>Mapa de prospectos — Microenvases</h1>
+    <p>Cajas de cartón corrugado</p>
+  </div>
+</header>
+
+<div class="overlay" id="overlay"></div>
+
+<div class="container">
+  <div id="sidebar">
+    <div class="sidebar-content">
+      <h2>Etapas del plan</h2>
+      <div id="tier-list"></div>
+      
+      <div class="divider"></div>
+      
+      <div class="home-note note">
+        🚩 Punto rojo: planta de Microenvases. Resto: prospectos con km reales por ruta.
+      </div>
+      
+      <h2 style="margin-top: 16px;">Lista de prospectos</h2>
+      <div class="list-toolbar">
+        <button class="sort-btn active" data-sort="etapa">Por etapa</button>
+        <button class="sort-btn" data-sort="km">Por km</button>
+      </div>
+      <div id="prospect-list"></div>
+    </div>
+  </div>
+
+  <div id="map"></div>
+</div>
+
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <h3>Cerrar venta — <span id="modal-prospect-name"></span></h3>
+    <div class="modal-field">
+      <label>N° de O.C:</label>
+      <input type="text" id="modal-oc" placeholder="Ej: OC-2026-001">
+    </div>
+    <div class="modal-field">
+      <label>Monto ($):</label>
+      <input type="number" id="modal-monto" placeholder="Ej: 150000">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-save" id="modal-save">Guardar y enviar</button>
+      <button class="btn-cancel" id="modal-cancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./service-worker.js').catch(err => console.log('SW registration failed'));
+}
+
+const TIERS = {
+  "1": { color: "#2E8B57", label: "Etapa 1 — Esta semana" },
+  "2": { color: "#D4A017", label: "Etapa 2 — Semana 2–3" },
+  "3": { color: "#D42E2E", label: "Etapa 3 — Prioridad alta (timing)" },
+  "4": { color: "#2E5FD4", label: "Etapa 4 — Evaluar con Eduardo" },
+  "5": { color: "#7B3FA0", label: "Etapa 5 — Mediano plazo" }
+};
+
+const POINTS = [
+  {"name": "La Felisa", "rubro": "Fiambres", "lugar": "Pergamino, BA", "lat": -33.883032, "lng": -60.597407, "tier": 1, "nota": "1.655 seguidores IG.", "id": "p0", "km": 227, "km_source": "real"},
+  {"name": "Fábrica de Chacinados Poggi", "rubro": "Chacinados", "lugar": "San Nicolás, BA", "lat": -33.339797, "lng": -60.205867, "tier": 1, "nota": "2.095 seguidores IG.", "id": "p1", "km": 267, "km_source": "real"},
+  {"name": "Chacinados Boarini", "rubro": "Chacinados", "lugar": "San Nicolás, BA", "lat": -33.343119, "lng": -60.207599, "tier": 1, "nota": "Marca fuerte en la zona.", "id": "p2", "km": 267, "km_source": "real"},
+  {"name": "Galletitas Lara", "rubro": "Galletitas", "lugar": "Rosario, SF", "lat": -32.953982, "lng": -60.675532, "tier": 1, "nota": "Distribución nacional.", "id": "p3", "km": 340, "km_source": "real"},
+  {"name": "Frigorífico La Jamonera", "rubro": "Fiambres", "lugar": "Rosario, SF", "lat": -32.991087, "lng": -60.643829, "tier": 2, "nota": "37K seguidores IG.", "id": "p4", "km": 340, "km_source": "real"},
+  {"name": "Fábrica de Galletitas Caricias", "rubro": "Galletitas", "lugar": "Rosario, SF", "lat": -32.927245, "lng": -60.703678, "tier": 2, "nota": "870 reseñas.", "id": "p5", "km": 340, "km_source": "real"},
+  {"name": "Cabaña Argentina", "rubro": "Fiambres", "lugar": "General Las Heras, BA", "lat": -34.927297, "lng": -58.832632, "tier": 3, "nota": "#4 ranking nacional.", "id": "p6", "km": 65, "km_source": "estimado"},
+  {"name": "Alimentaria La Pompeya", "rubro": "Faena porcina", "lugar": "Marcos Paz, BA", "lat": -34.831089, "lng": -58.836445, "tier": 4, "nota": "#2 ranking nacional.", "id": "p7", "km": 60, "km_source": "estimado"},
+  {"name": "Ceryvac S.A.", "rubro": "Faena porcina", "lugar": "Virrey del Pino, BA", "lat": -34.857332, "lng": -58.650698, "tier": 4, "nota": "#3 ranking nacional.", "id": "p8", "km": 45, "km_source": "estimado"},
+  {"name": "Swift Venado Tuerto", "rubro": "Frigorífico", "lugar": "Venado Tuerto, SF", "lat": -33.717048, "lng": -61.986140, "tier": 4, "nota": "Multinacional.", "id": "p9", "km": 379, "km_source": "real"},
+  {"name": "Rafaela Alimentos (Lario)", "rubro": "Fiambres", "lugar": "Rafaela, SF", "lat": -31.242223, "lng": -61.502090, "tier": 5, "nota": "#5 ranking nacional.", "id": "p10", "km": 543, "km_source": "real"},
+  {"name": "Rafaela Alimentos — Casilda", "rubro": "Fiambres", "lugar": "Casilda, SF", "lat": -33.046160, "lng": -61.144410, "tier": 5, "nota": "Planta más cercana.", "id": "p11", "km": 350, "km_source": "real"},
+  {"name": "Cagnoli", "rubro": "Fiambres", "lugar": "Tandil, BA", "lat": -37.286960, "lng": -59.131252, "tier": 5, "nota": "15.000 ton/año.", "id": "p12", "km": 348, "km_source": "real"},
+  {"name": "Frigorífico Hughes", "rubro": "Frigorífico porcino", "lugar": "Hughes, SF", "lat": -33.809337, "lng": -61.335651, "tier": 4, "nota": "Volumen industrial.", "id": "p13", "km": 310, "km_source": "estimado"}
+];
+
+const CONTACTS = {"p0": {"name": "La Felisa", "phone": "+542477423593", "email": "lafelisa.com.ar", "instagram": "@lafelisasa"}, "p1": {"name": "Fábrica de Chacinados Poggi", "phone": "+543364212216", "email": null, "instagram": "@fabricapoggi"}, "p2": {"name": "Chacinados Boarini", "phone": "+543364896020", "email": null, "instagram": "@boarinifiambresyembutidos"}, "p3": {"name": "Galletitas Lara", "phone": "+543414331873", "email": "galletitaslara.com.ar", "instagram": "@lara_vainillasygalletitas"}, "p4": {"name": "Frigorífico La Jamonera", "phone": "+543414636714", "email": "la-jamonera.com.ar", "instagram": null}, "p5": {"name": "Fábrica de Galletitas Caricias", "phone": "+543414383461", "email": "productoscaricias.com", "instagram": null}, "p6": {"name": "Cabaña Argentina", "phone": null, "email": "cabargentina.com", "instagram": "@cabargentina"}, "p7": {"name": "Alimentaria La Pompeya", "phone": null, "email": null, "instagram": null}, "p8": {"name": "Ceryvac S.A.", "phone": null, "email": null, "instagram": null}, "p9": {"name": "Swift Venado Tuerto", "phone": "+543417027200", "email": null, "instagram": null}, "p10": {"name": "Rafaela Alimentos (Lario)", "phone": null, "email": null, "instagram": "@lariooficial"}, "p11": {"name": "Rafaela Alimentos — Casilda", "phone": null, "email": null, "instagram": null}, "p12": {"name": "Cagnoli", "phone": "+542494441144", "email": null, "instagram": null}, "p13": {"name": "Frigorífico Hughes", "phone": null, "email": null, "instagram": null}};
+const HOME = { name: "Microenvases", lat: -34.6878491, lng: -58.3244052 };
+let statusState = {};
+let currentProspect = null;
+let currentSort = 'etapa';
+
+POINTS.forEach(p => { statusState[p.id] = "pendiente"; });
+
+const map = L.map('map', { scrollWheelZoom: true }).setView([-33.4, -60.2], 6);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© OpenStreetMap © CARTO',
+  maxZoom: 19
+}).addTo(map);
+
+const homeIcon = L.divIcon({
+  html: '<div style="width:20px;height:20px;border-radius:50%;background:#D42E2E;border:3px solid #161A;box-shadow:0 0 0 3px white;"></div>',
+  iconSize: [20, 20],
+  iconAnchor: [10, 10]
+});
+L.marker([HOME.lat, HOME.lng], { icon: homeIcon }).addTo(map).bindPopup(
+  `<div class="popup-title">🚩 ${HOME.name}</div><div class="popup-meta">Planta de operaciones</div>`
+);
+
+const markersByTier = {};
+const markersById = {};
+
+POINTS.forEach(p => {
+  const color = TIERS[p.tier].color;
+  const icon = L.divIcon({
+    html: `<div style="width:16px;height:16px;border-radius:50%;background:${color};border:2px solid rgba(0,0,0,0.35);box-shadow:0 1px 3px rgba(0,0,0,0.4);"></div>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8]
+  });
+  
+  const marker = L.marker([p.lat, p.lng], { icon }).addTo(map);
+  const contact = CONTACTS[p.id] || {};
+  let actionButtons = '';
+  if (contact.phone) {
+    actionButtons += `<button class="popup-btn" onclick="openWhatsAppForm('${p.id}', '${p.name}')">💬 WhatsApp</button>`;
+  }
+  if (contact.email) {
+    actionButtons += `<button class="popup-btn" onclick="openEmailForm('${p.id}', '${p.name}')">📧 Email</button>`;
+  }
+  if (contact.instagram) {
+    actionButtons += `<button class="popup-btn" onclick="window.open('https://instagram.com/${contact.instagram.replace('@', '')}', '_blank')">📸 Instagram</button>`;
+  }
+  const popupHtml = `
+    <div class="popup-tier" style="background:${color}">${TIERS[p.tier].label}</div>
+    <div class="popup-title">${p.name}</div>
+    <div class="popup-meta">${p.rubro} · ${p.lugar}</div>
+    <div class="popup-km">🗺 ${p.km} km ${p.km_source === 'estimado' ? '(est.)' : ''}</div>
+    <div class="popup-nota">${p.nota}</div>
+    <div class="popup-actions">
+      ${actionButtons || '<div style="font-size:10px;color:#999;">Sin contacto registrado</div>'}
+    </div>
+    <div class="popup-status">
+      <label>Estado:</label><br>
+      <select data-pid="${p.id}" onchange="updateStatus('${p.id}', this.value)">
+        <option value="pendiente">Pendiente</option>
+        <option value="contactado">Contactado</option>
+        <option value="cotizado">Cotizado</option>
+        <option value="cerrado">Cerrado</option>
+      </select>
+    </div>
+  `;
+  marker.bindPopup(popupHtml);
+  
+  if (!markersByTier[p.tier]) markersByTier[p.tier] = [];
+  markersByTier[p.tier].push(marker);
+  markersById[p.id] = marker;
+});
+
+const tierList = document.getElementById('tier-list');
+Object.keys(TIERS).forEach(tierNum => {
+  const t = TIERS[tierNum];
+  const count = POINTS.filter(p => String(p.tier) === tierNum).length;
+  const item = document.createElement('div');
+  item.className = 'tier-item';
+  item.innerHTML = `
+    <div class="dot" style="background:${t.color}"></div>
+    <div class="tier-item-text">
+      <div class="label">${t.label}</div>
+      <div class="count">${count} prospecto${count === 1 ? '' : 's'}</div>
+    </div>
+  `;
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.tier-item').forEach(e => e.classList.remove('active'));
+    item.classList.add('active');
+    const group = L.featureGroup(markersByTier[tierNum]);
+    map.fitBounds(group.getBounds().pad(0.35));
+  });
+  tierList.appendChild(item);
+});
+
+document.querySelectorAll('.sort-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentSort = btn.dataset.sort;
+    renderList();
+  });
+});
+
+function renderList() {
+  let sorted = [...POINTS];
+  if (currentSort === 'etapa') {
+    sorted.sort((a, b) => a.tier - b.tier || a.km - b.km);
+  } else {
+    sorted.sort((a, b) => a.km - b.km);
+  }
+  
+  const listEl = document.getElementById('prospect-list');
+  listEl.innerHTML = '';
+  sorted.forEach(p => {
+    const color = TIERS[p.tier].color;
+    const statusClass = `status-${statusState[p.id]}`;
+    const row = document.createElement('div');
+    row.className = 'prospect-row';
+    row.innerHTML = `
+      <div class="dot" style="background:${color}"></div>
+      <div class="rname">${p.name}<span class="status-tag ${statusClass}">${statusState[p.id]}</span></div>
+      <div class="rkm">${p.km} km</div>
+    `;
+    row.addEventListener('click', () => {
+      map.setView([p.lat, p.lng], 9);
+      markersById[p.id].openPopup();
+    });
+    listEl.appendChild(row);
+  });
+}
+renderList();
+
+function updateStatus(id, status) {
+  statusState[id] = status;
+  if (status === 'cerrado') {
+    openCloseModal(id);
+  }
+  renderList();
+}
+
+function openEmailForm(id, name) {
+  const prospect = POINTS.find(p => p.id === id);
+  const subject = encodeURIComponent('Cajas de cartón corrugado — Propuesta Microenvases');
+  const body = encodeURIComponent(`Hola ${name},
+
+Te contacto de parte de Microenvases, proveedor de cajas de cartón corrugado con 20 años en el mercado.
+
+Trabajamos con las principales marcas y queremos sumarte a nuestros clientes.
+
+La diferencia: trato directo con la gerencia, atención personalizada, cotización sin compromiso. Buscamos trabajar de manera seria y flexible según tu necesidad.
+
+¿Te vendría bien una charla para conocer cómo trabajamos?
+
+📞 2473410437 (Rodrigo)
+
+Saludos,
+Microenvases`);
+  window.location.href = `mailto:?subject=${subject}&body=${body}`;
+}
+
+function openWhatsAppForm(id, name) {
+  const contact = CONTACTS[id];
+  if (!contact || !contact.phone) {
+    alert('No hay WhatsApp registrado para ' + name);
+    return;
+  }
+  const cleanPhone = contact.phone.replace(/[^0-9]/g, '');
+  const text = encodeURIComponent(`Hola ${name} 👋
+
+Te escribo de Microenvases — proveedor de cajas de cartón corrugado hace 20 años.
+
+Queremos ofrecerte:
+✓ Trato directo con gerencia
+✓ Cotización sin compromiso
+✓ Precios competitivos
+
+¿Te vendría bien una charla rápida para ver cómo podemos ayudarte?
+
+Rodrigo
+📞 2473410437`);
+  window.open(`https://wa.me/${cleanPhone}?text=${text}`, '_blank');
+}
+
+function openCloseModal(id) {
+  currentProspect = POINTS.find(p => p.id === id);
+  document.getElementById('modal-prospect-name').textContent = currentProspect.name;
+  document.getElementById('modal-oc').value = '';
+  document.getElementById('modal-monto').value = '';
+  document.getElementById('modal').classList.add('active');
+}
+
+document.getElementById('modal-save').addEventListener('click', () => {
+  const oc = document.getElementById('modal-oc').value.trim();
+  const monto = document.getElementById('modal-monto').value.trim();
+  
+  if (!oc || !monto) {
+    alert('Completa O.C y Monto');
+    return;
+  }
+  
+  const comision = (parseFloat(monto) * 0.03).toFixed(2);
+  alert(`✓ Venta registrada\n\nProspecto: ${currentProspect.name}\nO.C: ${oc}\nMonto: $${monto}\nComisión (3%): $${comision}`);
+  
+  document.getElementById('modal').classList.remove('active');
+});
+
+document.getElementById('modal-cancel').addEventListener('click', () => {
+  document.getElementById('modal').classList.remove('active');
+  statusState[currentProspect.id] = 'cotizado';
+  renderList();
+});
+
+document.getElementById('menu-toggle').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('active');
+  document.getElementById('overlay').classList.toggle('active');
+});
+
+document.getElementById('overlay').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.remove('active');
+  document.getElementById('overlay').classList.remove('active');
+});
+</script>
+
+</body>
+</html>
