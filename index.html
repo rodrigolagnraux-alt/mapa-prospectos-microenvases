@@ -4,37 +4,38 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#16161A">
-<meta name="description" content="Mapa de prospectos — Cajas de cartón corrugado. Plan de ataque por etapas desde Microenvases.">
+<meta name="description" content="Mapa de prospectos — encontrá y organizá tus posibles clientes por zona, con plan de ataque por etapas y mensaje de presentación a un clic.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Prospectos Micro">
+<meta name="apple-mobile-web-app-title" content="Mapa Prospectos">
 <link rel="manifest" href="./manifest.json">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%2316161A' width='180' height='180'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='120' font-weight='bold' fill='%23D42E2E' font-family='system-ui'>M</text></svg>">
-<title>Mapa de prospectos — Microenvases</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' rx='36' fill='%2316161A'/%3E%3Cpath d='M100 42c-30 0-54 24-54 54 0 40 54 86 54 86s54-46 54-86c0-30-24-54-54-54zm0 74a20 20 0 110-40 20 20 0 010 40z' fill='%23D42E2E'/%3E%3C/svg%3E">
+<title>Mapa de Prospectos</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root { --red: #D42E2E; --dark: #16161A; --paper: #F5F1EC; --ink: #232323; --muted: #6b6b6b; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--paper); color: var(--ink); height: 100vh; overflow: hidden; }
-  
+
   header { background: var(--dark); color: white; padding: 12px 16px; display: flex; align-items: center; gap: 12px; z-index: 100; position: relative; }
-  header .menu-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 4px; }
-  header img { height: 32px; }
-  header .title { flex: 1; }
-  header h1 { font-size: 14px; font-weight: 700; line-height: 1.2; }
-  header p { font-size: 11px; color: #ccc; margin-top: 2px; }
-  
+  header .menu-btn, header .gear-btn { background: none; border: none; color: white; font-size: 22px; cursor: pointer; padding: 4px; }
+  header .logo { width: 32px; height: 32px; border-radius: 8px; background: var(--dark); border: 1px solid rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  header .logo svg { width: 20px; height: 20px; }
+  header .title { flex: 1; min-width: 0; }
+  header h1 { font-size: 14px; font-weight: 700; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  header p { font-size: 11px; color: #ccc; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
   .container { display: flex; height: calc(100vh - 56px); position: relative; }
-  
+
   #sidebar { position: fixed; left: 0; top: 56px; width: 280px; height: calc(100vh - 56px); background: white; overflow-y: auto; z-index: 99; transform: translateX(-100%); transition: transform 0.3s ease; border-right: 1px solid #e6e1d8; }
   #sidebar.active { transform: translateX(0); }
-  
+
   #map { flex: 1; width: 100%; height: 100%; }
-  
+
   .sidebar-content { padding: 16px; }
   .sidebar-content h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 12px; font-weight: 600; }
-  
+
   .tier-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 8px; border-radius: 8px; cursor: pointer; transition: background 0.15s ease; margin-bottom: 4px; }
   .tier-item:hover { background: #f7f4ee; }
   .tier-item.active { background: #efe9df; }
@@ -42,72 +43,98 @@
   .tier-item-text { flex: 1; }
   .tier-item .label { font-size: 12px; font-weight: 600; line-height: 1.3; }
   .tier-item .count { font-size: 11px; color: var(--muted); margin-top: 1px; }
-  
+  .tier-item .edit-tier { background: none; border: none; color: var(--muted); font-size: 12px; cursor: pointer; padding: 2px 4px; flex-shrink: 0; }
+  .tier-item .edit-tier:hover { color: var(--ink); }
+
   .divider { height: 1px; background: #e6e1d8; margin: 12px 0; }
   .note { font-size: 10px; color: var(--muted); line-height: 1.4; padding: 10px 8px; border-radius: 4px; margin-bottom: 8px; }
   .home-note { background: #FBEAEA; border-left: 3px solid var(--red); }
-  .warn-note { background: #FFF6DD; border-left: 3px solid #D4A017; }
-  
+
+  .add-btn { width: 100%; padding: 10px; background: var(--dark); color: white; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; margin-bottom: 10px; }
+  .add-btn:hover { background: #0a0a0c; }
+
   .list-toolbar { display: flex; gap: 6px; margin: 10px 0; }
   .sort-btn { flex: 1; font-size: 10px; padding: 6px 4px; border: 1px solid #ddd4c2; border-radius: 6px; background: white; cursor: pointer; color: var(--muted); transition: all 0.15s ease; }
   .sort-btn.active { background: var(--dark); color: white; border-color: var(--dark); }
-  
+
   #prospect-list { max-height: 350px; overflow-y: auto; }
   .prospect-row { display: flex; align-items: center; gap: 8px; padding: 7px 6px; border-radius: 7px; cursor: pointer; font-size: 11px; margin-bottom: 4px; }
   .prospect-row:hover { background: #f7f4ee; }
   .prospect-row .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .prospect-row .rname { flex: 1; font-weight: 600; }
+  .prospect-row .rname { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .prospect-row .rkm { color: var(--muted); white-space: nowrap; font-size: 10px; }
   .status-tag { font-size: 8px; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 4px; }
   .status-pendiente { background: #eee; color: #888; }
   .status-contactado { background: #FFF6DD; color: #a67c00; }
   .status-cotizado { background: #E3EEFB; color: #2E5FD4; }
   .status-cerrado { background: #E2F0E5; color: #2E8B57; }
-  
-  .tip-text { font-size: 10px; color: var(--muted); margin-top: 8px; line-height: 1.4; padding: 0 8px; }
-  
+
+  .empty-state { font-size: 11px; color: var(--muted); text-align: center; padding: 20px 8px; line-height: 1.5; }
+
+  .footer-actions { display: flex; gap: 6px; margin-top: 16px; flex-wrap: wrap; }
+  .footer-actions button, .footer-actions label { flex: 1; min-width: 80px; font-size: 10px; padding: 8px 4px; border: 1px solid #ddd4c2; border-radius: 6px; background: white; cursor: pointer; color: var(--muted); text-align: center; }
+  .footer-actions button:hover, .footer-actions label:hover { background: #f7f4ee; }
+  .footer-actions input[type=file] { display: none; }
+
   .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity 0.3s ease; z-index: 98; }
   .overlay.active { opacity: 1; pointer-events: auto; }
-  
-  .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+
+  .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; padding: 16px; overflow-y: auto; }
   .modal.active { display: flex; }
-  .modal-content { background: white; padding: 24px; border-radius: 12px; max-width: 400px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
-  .modal-content h3 { margin-bottom: 16px; font-size: 16px; font-weight: 700; }
-  .modal-field { margin-bottom: 16px; }
+  .modal-content { background: white; padding: 24px; border-radius: 12px; max-width: 440px; width: 100%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; margin: auto; }
+  .modal-content h3 { margin-bottom: 6px; font-size: 16px; font-weight: 700; }
+  .modal-sub { font-size: 11px; color: var(--muted); margin-bottom: 16px; line-height: 1.4; }
+  .modal-field { margin-bottom: 14px; }
   .modal-field label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--ink); }
-  .modal-field input { width: 100%; padding: 8px 12px; border: 1px solid #ddd4c2; border-radius: 6px; font-size: 14px; font-family: inherit; }
-  .modal-field input:focus { outline: none; border-color: var(--red); }
+  .modal-field .hint { font-size: 10px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+  .modal-field input, .modal-field textarea, .modal-field select { width: 100%; padding: 8px 12px; border: 1px solid #ddd4c2; border-radius: 6px; font-size: 14px; font-family: inherit; }
+  .modal-field textarea { resize: vertical; min-height: 70px; }
+  .modal-field input:focus, .modal-field textarea:focus, .modal-field select:focus { outline: none; border-color: var(--red); }
   .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
   .modal-actions button { flex: 1; padding: 10px; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
   .btn-save { background: var(--dark); color: white; }
   .btn-save:hover { background: #0a0a0c; }
   .btn-cancel { background: #f0f0f0; color: var(--ink); }
   .btn-cancel:hover { background: #e0e0e0; }
-  
+  .btn-danger { background: #FBEAEA; color: var(--red); }
+  .btn-danger:hover { background: #f5d5d5; }
+
+  #onboarding { position: fixed; inset: 0; background: var(--paper); z-index: 2000; overflow-y: auto; display: flex; align-items: flex-start; justify-content: center; padding: 32px 16px; }
+  .onboarding-card { max-width: 480px; width: 100%; background: white; border-radius: 14px; padding: 28px 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+  .onboarding-card h1 { font-size: 20px; margin-bottom: 6px; }
+  .onboarding-card .sub { font-size: 12px; color: var(--muted); margin-bottom: 24px; line-height: 1.5; }
+  .onboarding-status { font-size: 11px; color: var(--muted); margin-top: 6px; min-height: 14px; }
+
   .leaflet-popup-content { font-family: inherit; }
   .popup-title { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
   .popup-tier { display: inline-block; font-size: 9px; font-weight: 700; color: white; padding: 2px 7px; border-radius: 10px; margin-bottom: 6px; }
   .popup-meta { font-size: 10px; color: #555; margin-bottom: 3px; }
   .popup-km { font-size: 10px; font-weight: 700; color: var(--red); margin-bottom: 4px; }
   .popup-nota { font-size: 10px; color: #333; line-height: 1.4; margin-bottom: 8px; }
-  .popup-actions { display: flex; gap: 6px; margin-bottom: 8px; }
+  .popup-actions { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
   .popup-btn { flex: 1; font-size: 10px; font-weight: 700; color: white; background: #2E5FD4; padding: 5px 8px; border-radius: 6px; text-decoration: none; border: none; cursor: pointer; transition: background 0.2s ease; }
   .popup-btn:hover { background: #1e47a8; }
   .popup-status { margin-top: 8px; }
   .popup-status label { font-size: 10px; color: #666; }
   .popup-status select { font-size: 10px; padding: 3px 6px; border-radius: 4px; border: 1px solid #ccc; width: 100%; margin-top: 4px; }
-  
+  .popup-mini { display: flex; gap: 6px; margin-top: 8px; }
+  .popup-mini button { flex: 1; font-size: 9px; padding: 4px; border: 1px solid #ddd; background: #fafafa; border-radius: 4px; cursor: pointer; color: var(--muted); }
+  .popup-mini button:hover { background: #eee; }
+  .popup-contact-box { font-size: 10px; margin: 8px 0; border: 1px solid #ddd; padding: 8px; border-radius: 4px; }
+  .popup-contact-box input { width: 100%; padding: 4px; font-size: 9px; border: 1px solid #ccc; border-radius: 3px; margin-bottom: 4px; }
+  .popup-contact-box button { width: 100%; padding: 4px; background: #2E5FD4; color: white; border: none; border-radius: 3px; font-size: 9px; font-weight: 700; cursor: pointer; }
+
   @media (min-width: 768px) {
     header { padding: 16px 24px; }
     header .menu-btn { display: none; }
     header h1 { font-size: 16px; }
     header p { font-size: 12px; }
-    
+
     #sidebar { position: relative; transform: none; top: auto; width: 300px; height: 100%; }
     .overlay { display: none; }
-    
+
     .container { height: calc(100vh - 76px); }
-    
+
     .sidebar-content h2 { font-size: 12px; }
     .tier-item { font-size: 13px; padding: 12px 10px; }
     .sort-btn { font-size: 11px; }
@@ -117,13 +144,53 @@
 </head>
 <body>
 
+<div id="onboarding">
+  <div class="onboarding-card">
+    <h1>🗺 Armá tu mapa de prospectos</h1>
+    <p class="sub">Esto sirve para cualquier rubro: contános de tu negocio y armamos tu plan de ataque comercial por zona, con mensaje de presentación a un clic.</p>
+    <form id="onboarding-form">
+      <div class="modal-field">
+        <label>Nombre de tu negocio / marca</label>
+        <input type="text" id="ob-business" required placeholder="Ej: Microenvases">
+      </div>
+      <div class="modal-field">
+        <label>¿Qué vendés o fabricás?</label>
+        <input type="text" id="ob-rubro" required placeholder="Ej: Cajas de cartón corrugado">
+      </div>
+      <div class="modal-field">
+        <label>Tu nombre (quien contacta)</label>
+        <input type="text" id="ob-seller" required placeholder="Ej: Rodrigo">
+      </div>
+      <div class="modal-field">
+        <label>Tu WhatsApp de contacto</label>
+        <input type="text" id="ob-phone" placeholder="Ej: 2473410437">
+      </div>
+      <div class="modal-field">
+        <label>Dirección de tu base (planta, local, depósito)</label>
+        <input type="text" id="ob-address" required placeholder="Ej: Av. Siempre Viva 123, Ciudad, Provincia">
+        <div class="hint">La usamos para calcular la distancia a cada prospecto y ubicar el punto de partida en el mapa.</div>
+      </div>
+      <div class="modal-field">
+        <label>Mensaje de presentación</label>
+        <textarea id="ob-pitch" required></textarea>
+        <div class="hint">Podés usar {prospecto}, {empresa}, {rubro}, {vendedor}, {telefono} — se completan solos por cada contacto.</div>
+      </div>
+      <div class="onboarding-status" id="onboarding-status"></div>
+      <div class="modal-actions">
+        <button type="submit" class="btn-save" id="onboarding-submit">Crear mi mapa</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <header>
   <button class="menu-btn" id="menu-toggle">☰</button>
-  <img src="data:image/jpeg;base64,/9j/4QC8RXhpZgAATU0AKgAAAAgABQESAAMAAAABAAEAAAExAAIAAAAQAAABbQEyAAIAAAAUAAABlQEyAAIAAAAUAAABoAEDAAIAAAAaAAAAbgECAA0AAABsAAAAcgECABMAAAB+AAAAiQECAAMAAAB7AAAAAAAAAAD/2P/gABBKRklGAAECQQBKUklGAAECQQBKUklGAAECQQD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAApADwDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWm5ybnJ2eoqOkpaanqKmqsrO0tba2uLm6wsPExcbHyMnK0tPU1dbW2Nna4uPk5ebn6Onq8vP09fb2+Pn6/8QAHwEAAwEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlbaWmJmaoqOkpaanqKmqsrO0tba2uLm6wsPExcbHyMnK0tPU1dbW2Nna4uPk5ebn6Onq8vP09fb2+Pn6/9oADAMBAAIRAxEAPwD9VKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigD//Z" alt="Microenvases" />
+  <div class="logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><path d="M100 42c-30 0-54 24-54 54 0 40 54 86 54 86s54-46 54-86c0-30-24-54-54-54zm0 74a20 20 0 110-40 20 20 0 010 40z" fill="#D42E2E"/></svg></div>
   <div class="title">
-    <h1>Mapa de prospectos — Microenvases</h1>
-    <p>Cajas de cartón corrugado</p>
+    <h1 id="header-business">Mapa de Prospectos</h1>
+    <p id="header-rubro">Configurá tu negocio para empezar</p>
   </div>
+  <button class="gear-btn" id="config-toggle" title="Configuración">⚙</button>
 </header>
 
 <div class="overlay" id="overlay"></div>
@@ -131,32 +198,84 @@
 <div class="container">
   <div id="sidebar">
     <div class="sidebar-content">
+      <button class="add-btn" id="add-prospect-btn">+ Agregar prospecto</button>
+
       <h2>Etapas del plan</h2>
       <div id="tier-list"></div>
-      
+
       <div class="divider"></div>
-      
-      <div class="home-note note">
-        🚩 Punto rojo: planta de Microenvases. Resto: prospectos con km reales por ruta.
+
+      <div class="home-note note" id="home-note">
+        🚩 Punto rojo: tu base. Resto: prospectos con distancia aproximada.
       </div>
-      
+
       <h2 style="margin-top: 16px;">Lista de prospectos</h2>
       <div class="list-toolbar">
         <button class="sort-btn active" data-sort="etapa">Por etapa</button>
         <button class="sort-btn" data-sort="km">Por km</button>
       </div>
       <div id="prospect-list"></div>
+
+      <div class="footer-actions">
+        <button data-action="export-data">⬇ Exportar</button>
+        <label>⬆ Importar<input type="file" id="import-file" accept="application/json"></label>
+      </div>
     </div>
   </div>
 
   <div id="map"></div>
 </div>
 
+<div id="prospect-modal" class="modal">
+  <div class="modal-content">
+    <h3 id="prospect-modal-title">Agregar prospecto</h3>
+    <form id="prospect-form">
+      <div class="modal-field">
+        <label>Nombre</label>
+        <input type="text" id="pf-name" required placeholder="Ej: Fiambrería del Centro">
+      </div>
+      <div class="modal-field">
+        <label>Rubro</label>
+        <input type="text" id="pf-rubro" placeholder="Ej: Fiambres">
+      </div>
+      <div class="modal-field">
+        <label>Dirección o zona</label>
+        <input type="text" id="pf-address" required placeholder="Ej: San Nicolás, Buenos Aires">
+      </div>
+      <div class="modal-field">
+        <label>Etapa</label>
+        <select id="pf-tier"></select>
+      </div>
+      <div class="modal-field">
+        <label>Nota (opcional)</label>
+        <textarea id="pf-nota" placeholder="Ej: 2.000 seguidores IG, buen timing"></textarea>
+      </div>
+      <div class="modal-field">
+        <label>WhatsApp (opcional)</label>
+        <input type="text" id="pf-phone" placeholder="Ej: +5491122334455">
+      </div>
+      <div class="modal-field">
+        <label>Email (opcional)</label>
+        <input type="text" id="pf-email" placeholder="Ej: contacto@negocio.com">
+      </div>
+      <div class="modal-field">
+        <label>Instagram (opcional)</label>
+        <input type="text" id="pf-instagram" placeholder="Ej: @negocio">
+      </div>
+      <div class="onboarding-status" id="prospect-form-status"></div>
+      <div class="modal-actions">
+        <button type="submit" class="btn-save">Guardar</button>
+        <button type="button" class="btn-cancel" id="prospect-cancel">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div id="modal" class="modal">
   <div class="modal-content">
     <h3>Cerrar venta — <span id="modal-prospect-name"></span></h3>
     <div class="modal-field">
-      <label>N° de O.C:</label>
+      <label>N° de referencia / O.C:</label>
       <input type="text" id="modal-oc" placeholder="Ej: OC-2026-001">
     </div>
     <div class="modal-field">
@@ -164,9 +283,59 @@
       <input type="number" id="modal-monto" placeholder="Ej: 150000">
     </div>
     <div class="modal-actions">
-      <button class="btn-save" id="modal-save">Guardar y enviar</button>
+      <button class="btn-save" id="modal-save">Guardar</button>
       <button class="btn-cancel" id="modal-cancel">Cancelar</button>
     </div>
+  </div>
+</div>
+
+<div id="config-modal" class="modal">
+  <div class="modal-content">
+    <h3>Configuración</h3>
+    <form id="config-form">
+      <div class="modal-field">
+        <label>Nombre de tu negocio / marca</label>
+        <input type="text" id="cf-business" required>
+      </div>
+      <div class="modal-field">
+        <label>¿Qué vendés o fabricás?</label>
+        <input type="text" id="cf-rubro" required>
+      </div>
+      <div class="modal-field">
+        <label>Tu nombre (quien contacta)</label>
+        <input type="text" id="cf-seller" required>
+      </div>
+      <div class="modal-field">
+        <label>Tu WhatsApp de contacto</label>
+        <input type="text" id="cf-phone">
+      </div>
+      <div class="modal-field">
+        <label>Dirección de tu base</label>
+        <input type="text" id="cf-address" required>
+        <div class="hint">Si la cambiás, recalculamos el punto de partida y las distancias.</div>
+      </div>
+      <div class="modal-field">
+        <label>Mensaje de presentación</label>
+        <textarea id="cf-pitch" required></textarea>
+        <div class="hint">Placeholders: {prospecto}, {empresa}, {rubro}, {vendedor}, {telefono}</div>
+      </div>
+      <div class="modal-field">
+        <label>Asunto del email</label>
+        <input type="text" id="cf-subject">
+      </div>
+      <div class="modal-field">
+        <label>Comisión (%) — dejar en 0 si no aplica</label>
+        <input type="number" id="cf-commission" min="0" step="0.1">
+      </div>
+      <div class="onboarding-status" id="config-form-status"></div>
+      <div class="modal-actions">
+        <button type="submit" class="btn-save">Guardar cambios</button>
+        <button type="button" class="btn-cancel" id="config-cancel">Cerrar</button>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-danger" id="config-reset">Borrar todos los datos</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -175,253 +344,436 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./service-worker.js').catch(err => console.log('SW registration failed'));
 }
 
-const TIERS = {
-  "1": { color: "#2E8B57", label: "Etapa 1 — Esta semana" },
-  "2": { color: "#D4A017", label: "Etapa 2 — Semana 2–3" },
-  "3": { color: "#D42E2E", label: "Etapa 3 — Prioridad alta (timing)" },
-  "4": { color: "#2E5FD4", label: "Etapa 4 — Evaluar con Eduardo" },
-  "5": { color: "#7B3FA0", label: "Etapa 5 — Mediano plazo" }
-};
+const STORAGE_KEY = 'mapa_prospectos_data_v2';
+const DEFAULT_PITCH = `Hola {prospecto} 👋
 
-const POINTS = [
-  {"name": "La Felisa", "rubro": "Fiambres", "lugar": "Pergamino, BA", "lat": -33.883032, "lng": -60.597407, "tier": 1, "nota": "1.655 seguidores IG.", "id": "p0", "km": 227, "km_source": "real"},
-  {"name": "Fábrica de Chacinados Poggi", "rubro": "Chacinados", "lugar": "San Nicolás, BA", "lat": -33.339797, "lng": -60.205867, "tier": 1, "nota": "2.095 seguidores IG.", "id": "p1", "km": 267, "km_source": "real"},
-  {"name": "Chacinados Boarini", "rubro": "Chacinados", "lugar": "San Nicolás, BA", "lat": -33.343119, "lng": -60.207599, "tier": 1, "nota": "Marca fuerte en la zona.", "id": "p2", "km": 267, "km_source": "real"},
-  {"name": "Galletitas Lara", "rubro": "Galletitas", "lugar": "Rosario, SF", "lat": -32.953982, "lng": -60.675532, "tier": 1, "nota": "Distribución nacional.", "id": "p3", "km": 340, "km_source": "real"},
-  {"name": "Frigorífico La Jamonera", "rubro": "Fiambres", "lugar": "Rosario, SF", "lat": -32.991087, "lng": -60.643829, "tier": 2, "nota": "37K seguidores IG.", "id": "p4", "km": 340, "km_source": "real"},
-  {"name": "Fábrica de Galletitas Caricias", "rubro": "Galletitas", "lugar": "Rosario, SF", "lat": -32.927245, "lng": -60.703678, "tier": 2, "nota": "870 reseñas.", "id": "p5", "km": 340, "km_source": "real"},
-  {"name": "Cabaña Argentina", "rubro": "Fiambres", "lugar": "General Las Heras, BA", "lat": -34.927297, "lng": -58.832632, "tier": 3, "nota": "#4 ranking nacional.", "id": "p6", "km": 65, "km_source": "estimado"},
-  {"name": "Alimentaria La Pompeya", "rubro": "Faena porcina", "lugar": "Marcos Paz, BA", "lat": -34.831089, "lng": -58.836445, "tier": 4, "nota": "#2 ranking nacional.", "id": "p7", "km": 60, "km_source": "estimado"},
-  {"name": "Ceryvac S.A.", "rubro": "Faena porcina", "lugar": "Virrey del Pino, BA", "lat": -34.857332, "lng": -58.650698, "tier": 4, "nota": "#3 ranking nacional.", "id": "p8", "km": 45, "km_source": "estimado"},
-  {"name": "Swift Venado Tuerto", "rubro": "Frigorífico", "lugar": "Venado Tuerto, SF", "lat": -33.717048, "lng": -61.986140, "tier": 4, "nota": "Multinacional.", "id": "p9", "km": 379, "km_source": "real"},
-  {"name": "Rafaela Alimentos (Lario)", "rubro": "Fiambres", "lugar": "Rafaela, SF", "lat": -31.242223, "lng": -61.502090, "tier": 5, "nota": "#5 ranking nacional.", "id": "p10", "km": 543, "km_source": "real"},
-  {"name": "Rafaela Alimentos — Casilda", "rubro": "Fiambres", "lugar": "Casilda, SF", "lat": -33.046160, "lng": -61.144410, "tier": 5, "nota": "Planta más cercana.", "id": "p11", "km": 350, "km_source": "real"},
-  {"name": "Cagnoli", "rubro": "Fiambres", "lugar": "Tandil, BA", "lat": -37.286960, "lng": -59.131252, "tier": 5, "nota": "15.000 ton/año.", "id": "p12", "km": 348, "km_source": "real"},
-  {"name": "Frigorífico Hughes", "rubro": "Frigorífico porcino", "lugar": "Hughes, SF", "lat": -33.809337, "lng": -61.335651, "tier": 4, "nota": "Volumen industrial.", "id": "p13", "km": 310, "km_source": "estimado"}
-];
-
-const CONTACTS = {"p0": {"name": "La Felisa", "phone": "+542477423593", "email": "[email protected]", "instagram": "@lafelisasa"}, "p1": {"name": "Fábrica de Chacinados Poggi", "phone": "+543364212216", "email": null, "instagram": "@fabricapoggi"}, "p2": {"name": "Chacinados Boarini", "phone": "+543364896020", "email": null, "instagram": "@boarinifiambresyembutidos"}, "p3": {"name": "Galletitas Lara", "phone": "+543414331873", "email": "galletitaslara.com.ar", "instagram": "@lara_vainillasygalletitas"}, "p4": {"name": "Frigorífico La Jamonera", "phone": "+543414636714", "email": "info@la-jamonera.com", "instagram": null}, "p5": {"name": "Fábrica de Galletitas Caricias", "phone": "+543414383461", "email": "productoscaricias.com", "instagram": null}, "p6": {"name": "Cabaña Argentina", "phone": null, "email": "cabargentina.com", "instagram": "@cabargentina"}, "p7": {"name": "Alimentaria La Pompeya", "phone": null, "email": null, "instagram": null}, "p8": {"name": "Ceryvac S.A.", "phone": null, "email": null, "instagram": null}, "p9": {"name": "Swift Venado Tuerto", "phone": "+543417027200", "email": null, "instagram": null}, "p10": {"name": "Rafaela Alimentos (Lario)", "phone": null, "email": null, "instagram": "@lariooficial"}, "p11": {"name": "Rafaela Alimentos — Casilda", "phone": null, "email": null, "instagram": null}, "p12": {"name": "Cagnoli", "phone": "+542494441144", "email": null, "instagram": null}, "p13": {"name": "Frigorífico Hughes", "phone": null, "email": null, "instagram": null}};
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw20hhvu-rcHqBEIFNmSLO1ykXvBI1IsC1UC430jZ0U-UWR8phmwMTxS1zZCgkO704HEQ/usercontent";
-const HOME = { name: "Microenvases", lat: -34.6878491, lng: -58.3244052 };
-let statusState = {};
-let currentProspect = null;
-let currentSort = 'etapa';
-
-POINTS.forEach(p => { statusState[p.id] = "pendiente"; });
-
-const map = L.map('map', { scrollWheelZoom: true }).setView([-33.4, -60.2], 6);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-  attribution: '© OpenStreetMap © CARTO',
-  maxZoom: 19
-}).addTo(map);
-
-const homeIcon = L.divIcon({
-  html: '<div style="width:20px;height:20px;border-radius:50%;background:#D42E2E;border:3px solid #161A;box-shadow:0 0 0 3px white;"></div>',
-  iconSize: [20, 20],
-  iconAnchor: [10, 10]
-});
-L.marker([HOME.lat, HOME.lng], { icon: homeIcon }).addTo(map).bindPopup(
-  `<div class="popup-title">🚩 ${HOME.name}</div><div class="popup-meta">Planta de operaciones</div>`
-);
-
-const markersByTier = {};
-const markersById = {};
-
-POINTS.forEach(p => {
-  const color = TIERS[p.tier].color;
-  const icon = L.divIcon({
-    html: `<div style="width:16px;height:16px;border-radius:50%;background:${color};border:2px solid rgba(0,0,0,0.35);box-shadow:0 1px 3px rgba(0,0,0,0.4);"></div>`,
-    iconSize: [16, 16],
-    iconAnchor: [8, 8]
-  });
-  
-  const marker = L.marker([p.lat, p.lng], { icon }).addTo(map);
-  const contact = CONTACTS[p.id] || {};
-  let actionButtons = '';
-  if (contact.phone) {
-    actionButtons += `<button class="popup-btn" onclick="openWhatsAppForm('${p.id}', '${p.name}')">💬 WhatsApp</button>`;
-  }
-  if (contact.email) {
-    actionButtons += `<button class="popup-btn" onclick="openEmailForm('${p.id}', '${p.name}')">📧 Email</button>`;
-  }
-  if (contact.instagram) {
-    actionButtons += `<button class="popup-btn" onclick="window.open('https://instagram.com/${contact.instagram.replace('@', '')}', '_blank')">📸 Instagram</button>`;
-  }
-  
-  const contactsHtml = `
-    <div style="font-size:10px;margin:8px 0;border:1px solid #ddd;padding:8px;border-radius:4px;">
-      <div style="margin-bottom:6px;"><strong>Contactos:</strong></div>
-      <div style="margin-bottom:4px;">
-        <input type="text" id="contact-phone-${p.id}" placeholder="WhatsApp" value="${contact.phone || ''}" style="width:100%;padding:4px;font-size:9px;border:1px solid #ccc;border-radius:3px;">
-      </div>
-      <div style="margin-bottom:4px;">
-        <input type="text" id="contact-email-${p.id}" placeholder="Email/Web" value="${contact.email || ''}" style="width:100%;padding:4px;font-size:9px;border:1px solid #ccc;border-radius:3px;">
-      </div>
-      <div style="margin-bottom:6px;">
-        <input type="text" id="contact-ig-${p.id}" placeholder="Instagram (@usuario)" value="${contact.instagram || ''}" style="width:100%;padding:4px;font-size:9px;border:1px solid #ccc;border-radius:3px;">
-      </div>
-      <button onclick="saveContactsForProspect('${p.id}', '${p.name}')" style="width:100%;padding:4px;background:#2E5FD4;color:white;border:none;border-radius:3px;font-size:9px;font-weight:700;cursor:pointer;">Guardar contactos</button>
-    </div>
-  `;
-  
-  const popupHtml = `
-    <div class="popup-tier" style="background:${color}">${TIERS[p.tier].label}</div>
-    <div class="popup-title">${p.name}</div>
-    <div class="popup-meta">${p.rubro} · ${p.lugar}</div>
-    <div class="popup-km">🗺 ${p.km} km ${p.km_source === 'estimado' ? '(est.)' : ''}</div>
-    <div class="popup-nota">${p.nota}</div>
-    ${contactsHtml}
-    <div class="popup-actions">
-      ${actionButtons || '<div style="font-size:10px;color:#999;">Agregá contactos para ver opciones</div>'}
-    </div>
-    <div class="popup-status">
-      <label>Estado:</label><br>
-      <select data-pid="${p.id}" onchange="updateStatus('${p.id}', this.value)">
-        <option value="pendiente">Pendiente</option>
-        <option value="contactado">Contactado</option>
-        <option value="cotizado">Cotizado</option>
-        <option value="cerrado">Cerrado</option>
-      </select>
-    </div>
-  `;
-  marker.bindPopup(popupHtml);
-  
-  if (!markersByTier[p.tier]) markersByTier[p.tier] = [];
-  markersByTier[p.tier].push(marker);
-  markersById[p.id] = marker;
-});
-
-const tierList = document.getElementById('tier-list');
-Object.keys(TIERS).forEach(tierNum => {
-  const t = TIERS[tierNum];
-  const count = POINTS.filter(p => String(p.tier) === tierNum).length;
-  const item = document.createElement('div');
-  item.className = 'tier-item';
-  item.innerHTML = `
-    <div class="dot" style="background:${t.color}"></div>
-    <div class="tier-item-text">
-      <div class="label">${t.label}</div>
-      <div class="count">${count} prospecto${count === 1 ? '' : 's'}</div>
-    </div>
-  `;
-  item.addEventListener('click', () => {
-    document.querySelectorAll('.tier-item').forEach(e => e.classList.remove('active'));
-    item.classList.add('active');
-    const group = L.featureGroup(markersByTier[tierNum]);
-    map.fitBounds(group.getBounds().pad(0.35));
-  });
-  tierList.appendChild(item);
-});
-
-document.querySelectorAll('.sort-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentSort = btn.dataset.sort;
-    renderList();
-  });
-});
-
-function renderList() {
-  let sorted = [...POINTS];
-  if (currentSort === 'etapa') {
-    sorted.sort((a, b) => a.tier - b.tier || a.km - b.km);
-  } else {
-    sorted.sort((a, b) => a.km - b.km);
-  }
-  
-  const listEl = document.getElementById('prospect-list');
-  listEl.innerHTML = '';
-  sorted.forEach(p => {
-    const color = TIERS[p.tier].color;
-    const statusClass = `status-${statusState[p.id]}`;
-    const row = document.createElement('div');
-    row.className = 'prospect-row';
-    row.innerHTML = `
-      <div class="dot" style="background:${color}"></div>
-      <div class="rname">${p.name}<span class="status-tag ${statusClass}">${statusState[p.id]}</span></div>
-      <div class="rkm">${p.km} km</div>
-    `;
-    row.addEventListener('click', () => {
-      map.setView([p.lat, p.lng], 9);
-      markersById[p.id].openPopup();
-    });
-    listEl.appendChild(row);
-  });
-}
-renderList();
-
-function updateStatus(id, status) {
-  statusState[id] = status;
-  
-  // Enviar a Sheets
-  const prospect = POINTS.find(p => p.id === id);
-  if (prospect && status !== 'cerrado') {
-    fetch(SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({
-        action: 'updateStatus',
-        prospectName: prospect.name,
-        status: status
-      })
-    }).catch(err => console.log('Sync error:', err));
-  }
-  
-  if (status === 'cerrado') {
-    openCloseModal(id);
-  }
-  renderList();
-}
-
-function openEmailForm(id, name) {
-  const prospect = POINTS.find(p => p.id === id);
-  const subject = encodeURIComponent('Cajas de cartón corrugado — Propuesta Microenvases');
-  const body = encodeURIComponent(`Hola ${name},
-
-Te contacto de parte de Microenvases, proveedor de cajas de cartón corrugado con 20 años en el mercado.
-
-Trabajamos con las principales marcas y queremos sumarte a nuestros clientes.
-
-La diferencia: trato directo con la gerencia, atención personalizada, cotización sin compromiso. Buscamos trabajar de manera seria y flexible según tu necesidad.
-
-¿Te vendría bien una charla para conocer cómo trabajamos?
-
-📞 2473410437 (Rodrigo)
-
-Saludos,
-Microenvases`);
-  window.location.href = `mailto:?subject=${subject}&body=${body}`;
-}
-
-function openWhatsAppForm(id, name) {
-  const contact = CONTACTS[id];
-  if (!contact || !contact.phone) {
-    alert('No hay WhatsApp registrado para ' + name);
-    return;
-  }
-  const cleanPhone = contact.phone.replace(/[^0-9]/g, '');
-  const text = encodeURIComponent(`Hola ${name} 👋
-
-Te escribo de Microenvases — proveedor de cajas de cartón corrugado hace 20 años.
+Te escribo de {empresa} — {rubro}.
 
 Queremos ofrecerte:
-✓ Trato directo con gerencia
+✓ Trato directo
 ✓ Cotización sin compromiso
 ✓ Precios competitivos
 
 ¿Te vendría bien una charla rápida para ver cómo podemos ayudarte?
 
-Rodrigo
-📞 2473410437`);
-  console.log('Phone for ' + id + ': ' + cleanPhone);
-  const waUrl = `https://wa.me/${cleanPhone}?text=${text}`;
-  console.log('WhatsApp URL: ' + waUrl);
-  window.open(waUrl, '_blank');
+{vendedor}
+📞 {telefono}`;
+const DEFAULT_SUBJECT = 'Propuesta comercial — {empresa}';
+const DEFAULT_TIER_COLORS = ['#2E8B57', '#D4A017', '#D42E2E', '#2E5FD4', '#7B3FA0'];
+const DEFAULT_TIER_LABELS = [
+  'Etapa 1 — Contactar ahora',
+  'Etapa 2 — Esta semana',
+  'Etapa 3 — Prioridad alta',
+  'Etapa 4 — A evaluar',
+  'Etapa 5 — Mediano plazo'
+];
+
+let state = loadState();
+let map, homeMarker, prospectLayer;
+const markersById = {};
+let currentSort = 'etapa';
+let currentProspectForClose = null;
+let editingProspectId = null;
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed.config) return null;
+    return parsed;
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function esc(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
+async function geocodeAddress(address) {
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address)}`;
+  const res = await fetch(url, { headers: { 'Accept-Language': 'es' } });
+  if (!res.ok) throw new Error('No se pudo consultar el servicio de mapas');
+  const data = await res.json();
+  if (!data.length) throw new Error('No encontramos esa dirección. Probá con más detalle (ciudad, provincia).');
+  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+}
+
+function fillTemplate(tpl, vars) {
+  return String(tpl || '').replace(/\{(\w+)\}/g, (m, key) => (key in vars ? vars[key] : m));
+}
+
+function messageVars(p) {
+  const c = state.config;
+  return {
+    prospecto: p.name,
+    empresa: c.businessName,
+    rubro: c.rubro,
+    vendedor: c.sellerName,
+    telefono: c.sellerPhone || ''
+  };
+}
+
+/* ---------- Onboarding ---------- */
+
+document.getElementById('ob-pitch').value = DEFAULT_PITCH;
+
+document.getElementById('onboarding-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const statusEl = document.getElementById('onboarding-status');
+  const submitBtn = document.getElementById('onboarding-submit');
+  const address = document.getElementById('ob-address').value.trim();
+  statusEl.textContent = 'Buscando la dirección...';
+  submitBtn.disabled = true;
+  try {
+    const { lat, lng } = await geocodeAddress(address);
+    state = {
+      config: {
+        businessName: document.getElementById('ob-business').value.trim(),
+        rubro: document.getElementById('ob-rubro').value.trim(),
+        sellerName: document.getElementById('ob-seller').value.trim(),
+        sellerPhone: document.getElementById('ob-phone').value.trim(),
+        homeAddress: address,
+        homeLat: lat,
+        homeLng: lng,
+        pitchTemplate: document.getElementById('ob-pitch').value,
+        emailSubjectTemplate: DEFAULT_SUBJECT,
+        commissionRate: 0,
+        tierLabels: [...DEFAULT_TIER_LABELS]
+      },
+      prospects: [],
+      sales: []
+    };
+    saveState();
+    document.getElementById('onboarding').style.display = 'none';
+    initApp();
+  } catch (err) {
+    statusEl.textContent = '⚠ ' + err.message;
+    submitBtn.disabled = false;
+  }
+});
+
+/* ---------- App bootstrap ---------- */
+
+if (state) {
+  document.getElementById('onboarding').style.display = 'none';
+  initApp();
+}
+
+function initApp() {
+  document.getElementById('header-business').textContent = state.config.businessName;
+  document.getElementById('header-rubro').textContent = state.config.rubro;
+  document.getElementById('home-note').innerHTML = `🚩 Punto rojo: ${esc(state.config.businessName)}. Resto: prospectos con distancia aproximada.`;
+
+  if (!map) {
+    map = L.map('map', { scrollWheelZoom: true }).setView([state.config.homeLat, state.config.homeLng], 6);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '© OpenStreetMap © CARTO',
+      maxZoom: 19
+    }).addTo(map);
+    prospectLayer = L.layerGroup().addTo(map);
+  }
+
+  const homeIcon = L.divIcon({
+    html: '<div style="width:20px;height:20px;border-radius:50%;background:#D42E2E;border:3px solid #16161A;box-shadow:0 0 0 3px white;"></div>',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10]
+  });
+  if (homeMarker) map.removeLayer(homeMarker);
+  homeMarker = L.marker([state.config.homeLat, state.config.homeLng], { icon: homeIcon }).addTo(map).bindPopup(
+    `<div class="popup-title">🚩 ${esc(state.config.businessName)}</div><div class="popup-meta">Base de operaciones</div>`
+  );
+  if (state.prospects.length === 0) {
+    map.setView([state.config.homeLat, state.config.homeLng], 11);
+  }
+
+  renderTierList();
+  renderMarkers();
+  renderList();
+}
+
+/* ---------- Tiers ---------- */
+
+function tierMeta(num) {
+  return {
+    color: DEFAULT_TIER_COLORS[num - 1],
+    label: state.config.tierLabels[num - 1]
+  };
+}
+
+function renderTierList() {
+  const tierList = document.getElementById('tier-list');
+  tierList.innerHTML = '';
+  for (let num = 1; num <= 5; num++) {
+    const t = tierMeta(num);
+    const count = state.prospects.filter(p => p.tier === num).length;
+    const item = document.createElement('div');
+    item.className = 'tier-item';
+    item.innerHTML = `
+      <div class="dot" style="background:${t.color}"></div>
+      <div class="tier-item-text" data-action="filter-tier" data-tier="${num}">
+        <div class="label">${esc(t.label)}</div>
+        <div class="count">${count} prospecto${count === 1 ? '' : 's'}</div>
+      </div>
+      <button class="edit-tier" data-action="rename-tier" data-tier="${num}" title="Renombrar etapa">✏️</button>
+    `;
+    tierList.appendChild(item);
+  }
+}
+
+function renameTier(num) {
+  const current = state.config.tierLabels[num - 1];
+  const next = prompt('Nombre de la etapa ' + num + ':', current);
+  if (next && next.trim()) {
+    state.config.tierLabels[num - 1] = next.trim();
+    saveState();
+    renderTierList();
+    renderMarkers();
+    renderList();
+  }
+}
+
+function filterByTier(num) {
+  const group = state.prospects.filter(p => p.tier === num);
+  if (!group.length) { alert('No hay prospectos en esta etapa todavía.'); return; }
+  const bounds = L.latLngBounds(group.map(p => [p.lat, p.lng]));
+  map.fitBounds(bounds.pad(0.35));
+}
+
+/* ---------- Markers & popup ---------- */
+
+function renderMarkers() {
+  prospectLayer.clearLayers();
+  for (const id in markersById) delete markersById[id];
+
+  state.prospects.forEach(p => {
+    const t = tierMeta(p.tier);
+    const icon = L.divIcon({
+      html: `<div style="width:16px;height:16px;border-radius:50%;background:${t.color};border:2px solid rgba(0,0,0,0.35);box-shadow:0 1px 3px rgba(0,0,0,0.4);"></div>`,
+      iconSize: [16, 16],
+      iconAnchor: [8, 8]
+    });
+    const marker = L.marker([p.lat, p.lng], { icon }).addTo(prospectLayer);
+    marker.bindPopup(() => popupHtml(p.id));
+    markersById[p.id] = marker;
+  });
+}
+
+function popupHtml(id) {
+  const p = state.prospects.find(x => x.id === id);
+  if (!p) return '';
+  const t = tierMeta(p.tier);
+  let actionButtons = '';
+  if (p.phone) actionButtons += `<button class="popup-btn" data-action="send-whatsapp" data-id="${p.id}">💬 WhatsApp</button>`;
+  if (p.email) actionButtons += `<button class="popup-btn" data-action="send-email" data-id="${p.id}">📧 Email</button>`;
+  if (p.instagram) actionButtons += `<button class="popup-btn" data-action="open-instagram" data-id="${p.id}">📸 Instagram</button>`;
+
+  return `
+    <div class="popup-tier" style="background:${t.color}">${esc(t.label)}</div>
+    <div class="popup-title">${esc(p.name)}</div>
+    <div class="popup-meta">${esc(p.rubro || '')}</div>
+    <div class="popup-km">🗺 ≈ ${p.km} km (línea recta)</div>
+    ${p.nota ? `<div class="popup-nota">${esc(p.nota)}</div>` : ''}
+    <div class="popup-contact-box">
+      <div style="margin-bottom:6px;"><strong>Contactos:</strong></div>
+      <input type="text" id="contact-phone-${p.id}" placeholder="WhatsApp" value="${esc(p.phone || '')}">
+      <input type="text" id="contact-email-${p.id}" placeholder="Email" value="${esc(p.email || '')}">
+      <input type="text" id="contact-ig-${p.id}" placeholder="Instagram (@usuario)" value="${esc(p.instagram || '')}">
+      <button data-action="save-contacts" data-id="${p.id}">Guardar contactos</button>
+    </div>
+    <div class="popup-actions">
+      ${actionButtons || '<div style="font-size:10px;color:#999;">Agregá contactos para ver opciones</div>'}
+    </div>
+    <div class="popup-status">
+      <label>Estado:</label><br>
+      <select data-action="update-status" data-id="${p.id}">
+        <option value="pendiente" ${p.status === 'pendiente' ? 'selected' : ''}>Pendiente</option>
+        <option value="contactado" ${p.status === 'contactado' ? 'selected' : ''}>Contactado</option>
+        <option value="cotizado" ${p.status === 'cotizado' ? 'selected' : ''}>Cotizado</option>
+        <option value="cerrado" ${p.status === 'cerrado' ? 'selected' : ''}>Cerrado</option>
+      </select>
+    </div>
+    <div class="popup-mini">
+      <button data-action="edit-prospect" data-id="${p.id}">✏️ Editar</button>
+      <button data-action="delete-prospect" data-id="${p.id}">🗑 Eliminar</button>
+    </div>
+  `;
+}
+
+function refreshOpenPopup(id) {
+  const marker = markersById[id];
+  if (marker && marker.isPopupOpen()) marker.setPopupContent(popupHtml(id));
+}
+
+/* ---------- List ---------- */
+
+function renderList() {
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === currentSort));
+
+  let sorted = [...state.prospects];
+  if (currentSort === 'etapa') {
+    sorted.sort((a, b) => a.tier - b.tier || a.km - b.km);
+  } else {
+    sorted.sort((a, b) => a.km - b.km);
+  }
+
+  const listEl = document.getElementById('prospect-list');
+  listEl.innerHTML = '';
+
+  if (!sorted.length) {
+    listEl.innerHTML = '<div class="empty-state">Todavía no cargaste prospectos.<br>Usá "+ Agregar prospecto" para empezar.</div>';
+    return;
+  }
+
+  sorted.forEach(p => {
+    const t = tierMeta(p.tier);
+    const row = document.createElement('div');
+    row.className = 'prospect-row';
+    row.dataset.action = 'focus-prospect';
+    row.dataset.id = p.id;
+    row.innerHTML = `
+      <div class="dot" style="background:${t.color}"></div>
+      <div class="rname">${esc(p.name)}<span class="status-tag status-${p.status}">${p.status}</span></div>
+      <div class="rkm">${p.km} km</div>
+    `;
+    listEl.appendChild(row);
+  });
+}
+
+document.querySelectorAll('.sort-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    currentSort = btn.dataset.sort;
+    renderList();
+  });
+});
+
+/* ---------- Add / edit prospect ---------- */
+
+function openProspectModal(id) {
+  editingProspectId = id || null;
+  const form = document.getElementById('prospect-form');
+  form.reset();
+  document.getElementById('prospect-form-status').textContent = '';
+
+  const tierSelect = document.getElementById('pf-tier');
+  tierSelect.innerHTML = '';
+  for (let num = 1; num <= 5; num++) {
+    const opt = document.createElement('option');
+    opt.value = num;
+    opt.textContent = tierMeta(num).label;
+    tierSelect.appendChild(opt);
+  }
+
+  if (id) {
+    const p = state.prospects.find(x => x.id === id);
+    document.getElementById('prospect-modal-title').textContent = 'Editar prospecto';
+    document.getElementById('pf-name').value = p.name;
+    document.getElementById('pf-rubro').value = p.rubro || '';
+    document.getElementById('pf-address').value = p.address || '';
+    document.getElementById('pf-tier').value = p.tier;
+    document.getElementById('pf-nota').value = p.nota || '';
+    document.getElementById('pf-phone').value = p.phone || '';
+    document.getElementById('pf-email').value = p.email || '';
+    document.getElementById('pf-instagram').value = p.instagram || '';
+  } else {
+    document.getElementById('prospect-modal-title').textContent = 'Agregar prospecto';
+  }
+  document.getElementById('prospect-modal').classList.add('active');
+}
+
+document.getElementById('add-prospect-btn').addEventListener('click', () => openProspectModal());
+document.getElementById('prospect-cancel').addEventListener('click', () => {
+  document.getElementById('prospect-modal').classList.remove('active');
+});
+
+document.getElementById('prospect-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const statusEl = document.getElementById('prospect-form-status');
+  const address = document.getElementById('pf-address').value.trim();
+  const name = document.getElementById('pf-name').value.trim();
+  const submitBtn = e.target.querySelector('.btn-save');
+  submitBtn.disabled = true;
+  statusEl.textContent = 'Ubicando en el mapa...';
+  try {
+    const { lat, lng } = await geocodeAddress(address);
+    const km = haversineKm(state.config.homeLat, state.config.homeLng, lat, lng);
+    const data = {
+      name,
+      rubro: document.getElementById('pf-rubro').value.trim(),
+      address,
+      lat, lng, km,
+      tier: parseInt(document.getElementById('pf-tier').value, 10),
+      nota: document.getElementById('pf-nota').value.trim(),
+      phone: document.getElementById('pf-phone').value.trim(),
+      email: document.getElementById('pf-email').value.trim(),
+      instagram: document.getElementById('pf-instagram').value.trim()
+    };
+
+    if (editingProspectId) {
+      const p = state.prospects.find(x => x.id === editingProspectId);
+      Object.assign(p, data);
+    } else {
+      state.prospects.push({
+        id: crypto.randomUUID(),
+        status: 'pendiente',
+        createdAt: new Date().toISOString(),
+        ...data
+      });
+    }
+    saveState();
+    renderTierList();
+    renderMarkers();
+    renderList();
+    document.getElementById('prospect-modal').classList.remove('active');
+    map.setView([lat, lng], 10);
+  } catch (err) {
+    statusEl.textContent = '⚠ ' + err.message;
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+function deleteProspect(id) {
+  const p = state.prospects.find(x => x.id === id);
+  if (!p) return;
+  if (!confirm('¿Eliminar "' + p.name + '" de tu mapa?')) return;
+  state.prospects = state.prospects.filter(x => x.id !== id);
+  saveState();
+  renderTierList();
+  renderMarkers();
+  renderList();
+}
+
+/* ---------- Status & sales ---------- */
+
+function updateStatus(id, status) {
+  const p = state.prospects.find(x => x.id === id);
+  if (!p) return;
+  p.status = status;
+  saveState();
+  renderList();
+  refreshOpenPopup(id);
+  if (status === 'cerrado') openCloseModal(id);
 }
 
 function openCloseModal(id) {
-  currentProspect = POINTS.find(p => p.id === id);
-  document.getElementById('modal-prospect-name').textContent = currentProspect.name;
+  currentProspectForClose = state.prospects.find(p => p.id === id);
+  document.getElementById('modal-prospect-name').textContent = currentProspectForClose.name;
   document.getElementById('modal-oc').value = '';
   document.getElementById('modal-monto').value = '';
   document.getElementById('modal').classList.add('active');
@@ -430,82 +782,208 @@ function openCloseModal(id) {
 document.getElementById('modal-save').addEventListener('click', () => {
   const oc = document.getElementById('modal-oc').value.trim();
   const monto = document.getElementById('modal-monto').value.trim();
-  
-  if (!oc || !monto) {
-    alert('Completa O.C y Monto');
-    return;
-  }
-  
-  const comision = (parseFloat(monto) * 0.03).toFixed(2);
-  
-  // Enviar a Sheets
-  fetch(SCRIPT_URL, {
-    method: 'POST',
-    body: JSON.stringify({
-      action: 'registerSale',
-      prospectName: currentProspect.name,
-      oc: oc,
-      monto: monto
-    })
-  }).then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        alert(`✓ Venta registrada en Sheets\n\nProspecto: ${currentProspect.name}\nO.C: ${oc}\nMonto: $${monto}\nComisión (3%): $${comision}`);
-        statusState[currentProspect.id] = 'cerrado';
-        renderList();
-      }
-    })
-    .catch(err => console.log('Error:', err));
-  
+  if (!oc || !monto) { alert('Completá referencia y monto'); return; }
+
+  const rate = parseFloat(state.config.commissionRate) || 0;
+  const comision = rate > 0 ? (parseFloat(monto) * rate / 100).toFixed(2) : null;
+
+  state.sales.push({
+    id: crypto.randomUUID(),
+    prospectId: currentProspectForClose.id,
+    prospectName: currentProspectForClose.name,
+    oc, monto, comision,
+    createdAt: new Date().toISOString()
+  });
+  saveState();
+
+  let msg = `✓ Venta registrada\n\nProspecto: ${currentProspectForClose.name}\nReferencia: ${oc}\nMonto: $${monto}`;
+  if (comision) msg += `\nComisión (${rate}%): $${comision}`;
+  alert(msg);
+
   document.getElementById('modal').classList.remove('active');
+  renderList();
 });
 
 document.getElementById('modal-cancel').addEventListener('click', () => {
   document.getElementById('modal').classList.remove('active');
-  statusState[currentProspect.id] = 'cotizado';
+  currentProspectForClose.status = 'cotizado';
+  saveState();
   renderList();
 });
+
+/* ---------- Contacts & messaging ---------- */
+
+function saveContacts(id) {
+  const p = state.prospects.find(x => x.id === id);
+  if (!p) return;
+  p.phone = document.getElementById(`contact-phone-${id}`).value.trim();
+  p.email = document.getElementById(`contact-email-${id}`).value.trim();
+  p.instagram = document.getElementById(`contact-ig-${id}`).value.trim();
+  saveState();
+  refreshOpenPopup(id);
+  alert('✓ Contactos guardados');
+}
+
+function sendWhatsApp(id) {
+  const p = state.prospects.find(x => x.id === id);
+  if (!p || !p.phone) { alert('No hay WhatsApp registrado para este prospecto'); return; }
+  const text = fillTemplate(state.config.pitchTemplate, messageVars(p));
+  const cleanPhone = p.phone.replace(/[^0-9]/g, '');
+  window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+function sendEmail(id) {
+  const p = state.prospects.find(x => x.id === id);
+  if (!p) return;
+  const subject = fillTemplate(state.config.emailSubjectTemplate || DEFAULT_SUBJECT, messageVars(p));
+  const body = fillTemplate(state.config.pitchTemplate, messageVars(p));
+  const to = p.email && p.email.includes('@') ? p.email : '';
+  window.location.href = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+function openInstagram(id) {
+  const p = state.prospects.find(x => x.id === id);
+  if (!p || !p.instagram) return;
+  window.open(`https://instagram.com/${p.instagram.replace('@', '')}`, '_blank');
+}
+
+/* ---------- Delegated events ---------- */
+
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const action = el.dataset.action;
+  const id = el.dataset.id;
+  switch (action) {
+    case 'filter-tier': filterByTier(parseInt(el.dataset.tier, 10)); break;
+    case 'rename-tier': renameTier(parseInt(el.dataset.tier, 10)); break;
+    case 'focus-prospect': {
+      const p = state.prospects.find(x => x.id === id);
+      if (p) { map.setView([p.lat, p.lng], 12); markersById[id].openPopup(); }
+      break;
+    }
+    case 'save-contacts': saveContacts(id); break;
+    case 'send-whatsapp': sendWhatsApp(id); break;
+    case 'send-email': sendEmail(id); break;
+    case 'open-instagram': openInstagram(id); break;
+    case 'edit-prospect': openProspectModal(id); break;
+    case 'delete-prospect': deleteProspect(id); break;
+    case 'export-data': exportData(); break;
+  }
+});
+
+document.addEventListener('change', (e) => {
+  const el = e.target.closest('[data-action="update-status"]');
+  if (el) updateStatus(el.dataset.id, el.value);
+});
+
+/* ---------- Sidebar / overlay toggles ---------- */
 
 document.getElementById('menu-toggle').addEventListener('click', () => {
   document.getElementById('sidebar').classList.toggle('active');
   document.getElementById('overlay').classList.toggle('active');
 });
-
 document.getElementById('overlay').addEventListener('click', () => {
   document.getElementById('sidebar').classList.remove('active');
   document.getElementById('overlay').classList.remove('active');
 });
 
-function saveContactsForProspect(id, name) {
-  const phone = document.getElementById(`contact-phone-${id}`).value.trim();
-  const email = document.getElementById(`contact-email-${id}`).value.trim();
-  const instagram = document.getElementById(`contact-ig-${id}`).value.trim();
-  
-  // Actualizar en memoria
-  CONTACTS[id] = { name, phone, email, instagram };
-  
-  // Enviar a Sheets
-  if (phone) {
-    fetch(SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'updateContact', prospectName: name, field: 'phone', value: phone })
-    }).catch(err => console.log('Error:', err));
+/* ---------- Config modal ---------- */
+
+document.getElementById('config-toggle').addEventListener('click', () => {
+  if (!state) { alert('Primero completá la configuración inicial.'); return; }
+  document.getElementById('cf-business').value = state.config.businessName;
+  document.getElementById('cf-rubro').value = state.config.rubro;
+  document.getElementById('cf-seller').value = state.config.sellerName;
+  document.getElementById('cf-phone').value = state.config.sellerPhone || '';
+  document.getElementById('cf-address').value = state.config.homeAddress;
+  document.getElementById('cf-pitch').value = state.config.pitchTemplate;
+  document.getElementById('cf-subject').value = state.config.emailSubjectTemplate || DEFAULT_SUBJECT;
+  document.getElementById('cf-commission').value = state.config.commissionRate || 0;
+  document.getElementById('config-form-status').textContent = '';
+  document.getElementById('config-modal').classList.add('active');
+});
+document.getElementById('config-cancel').addEventListener('click', () => {
+  document.getElementById('config-modal').classList.remove('active');
+});
+
+document.getElementById('config-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const statusEl = document.getElementById('config-form-status');
+  const submitBtn = e.target.querySelector('.btn-save');
+  const address = document.getElementById('cf-address').value.trim();
+  submitBtn.disabled = true;
+
+  try {
+    let lat = state.config.homeLat, lng = state.config.homeLng;
+    if (address !== state.config.homeAddress) {
+      statusEl.textContent = 'Actualizando ubicación...';
+      const geo = await geocodeAddress(address);
+      lat = geo.lat; lng = geo.lng;
+    }
+    state.config.businessName = document.getElementById('cf-business').value.trim();
+    state.config.rubro = document.getElementById('cf-rubro').value.trim();
+    state.config.sellerName = document.getElementById('cf-seller').value.trim();
+    state.config.sellerPhone = document.getElementById('cf-phone').value.trim();
+    state.config.homeAddress = address;
+    state.config.homeLat = lat;
+    state.config.homeLng = lng;
+    state.config.pitchTemplate = document.getElementById('cf-pitch').value;
+    state.config.emailSubjectTemplate = document.getElementById('cf-subject').value.trim() || DEFAULT_SUBJECT;
+    state.config.commissionRate = parseFloat(document.getElementById('cf-commission').value) || 0;
+
+    state.prospects.forEach(p => { p.km = haversineKm(lat, lng, p.lat, p.lng); });
+
+    saveState();
+    initApp();
+    document.getElementById('config-modal').classList.remove('active');
+  } catch (err) {
+    statusEl.textContent = '⚠ ' + err.message;
+  } finally {
+    submitBtn.disabled = false;
   }
-  if (email) {
-    fetch(SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'updateContact', prospectName: name, field: 'email', value: email })
-    }).catch(err => console.log('Error:', err));
-  }
-  if (instagram) {
-    fetch(SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'updateContact', prospectName: name, field: 'instagram', value: instagram })
-    }).catch(err => console.log('Error:', err));
-  }
-  
-  alert('✓ Contactos guardados en Sheets');
+});
+
+document.getElementById('config-reset').addEventListener('click', () => {
+  if (!confirm('¿Borrar todos los datos (negocio, prospectos y ventas) y volver a empezar? Esta acción no se puede deshacer.')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+});
+
+/* ---------- Export / import ---------- */
+
+function exportData() {
+  if (!state) return;
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const safeName = (state.config.businessName || 'mapa').replace(/[^a-z0-9]+/gi, '_');
+  a.download = `mapa-prospectos-${safeName}-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
+
+document.getElementById('import-file').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const parsed = JSON.parse(ev.target.result);
+      if (!parsed.config || !Array.isArray(parsed.prospects)) throw new Error('El archivo no tiene el formato esperado');
+      state = parsed;
+      saveState();
+      location.reload();
+    } catch (err) {
+      alert('No se pudo importar el archivo: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
 </script>
 
 </body>

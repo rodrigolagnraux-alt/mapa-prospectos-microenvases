@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mapa-prospectos-v1';
+const CACHE_NAME = 'mapa-prospectos-v2';
 const urlsToCache = [
   './',
   './index.html',
